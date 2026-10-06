@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="zh" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>21st Century Smart Classroom Layout Generator (PAK-21)</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Three.js Library for 3D View -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              500: '#06b6d4',
+              600: '#0284c7',
+              700: '#0369a1',
+              900: '#0c4a6e',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      user-select: none;
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(15, 23, 42, 0.6);
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(51, 65, 85, 0.8);
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(71, 85, 105, 1);
+    }
+    canvas {
+      touch-action: none;
+    }
+
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #printReportArea, #printReportArea * {
+        visibility: visible;
+      }
+      #printReportArea {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        color: #000 !important;
+        background: #fff !important;
+        display: block !important;
+      }
+      .page-break {
+        page-break-before: always;
+      }
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col overflow-x-hidden">
+
+  <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30 shadow-lg">
+    <div class="flex items-center space-x-3">
+      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-teal-500 to-emerald-400 p-0.5 flex items-center justify-center shadow-md">
+        <div class="w-full h-full bg-slate-900 rounded-[10px] flex items-center justify-center">
+          <i class="fa-solid fa-shapes text-indigo-400 text-lg"></i>
+        </div>
+      </div>
+      <div>
+        <h1 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
+          <span>Smart Classroom Layout Generator</span>
+          <span class="px-2 py-0.5 text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full font-semibold">PAK-21</span>
+        </h1>
+        <p class="text-xs text-slate-400" data-i18n="app_subtitle">21世纪智能教室空间布局与实景生成器</p>
+      </div>
+    </div>
+
+    <!-- Quick Room Dimensions & Language Control -->
+    <div class="flex items-center space-x-3 flex-wrap gap-y-2">
+      <div class="flex items-center space-x-2 bg-slate-800/90 px-3 py-1.5 rounded-lg border border-slate-700/70 text-xs">
+        <i class="fa-solid fa-ruler-combined text-indigo-400"></i>
+        <span class="text-slate-400 font-medium" data-i18n="label_room_size">教室尺寸:</span>
+        <input type="number" id="inputRoomW" value="10" min="4" max="25" step="0.5" onchange="updateRoomDimensions()" class="w-12 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-center text-white focus:outline-none focus:border-indigo-500 font-semibold">
+        <span class="text-slate-400">m &times;</span>
+        <input type="number" id="inputRoomL" value="8" min="4" max="25" step="0.5" onchange="updateRoomDimensions()" class="w-12 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-center text-white focus:outline-none focus:border-indigo-500 font-semibold">
+        <span class="text-slate-400">m</span>
+      </div>
+
+      <div class="flex items-center space-x-2 bg-slate-800/90 px-3 py-1.5 rounded-lg border border-slate-700/70 text-xs">
+        <i class="fa-solid fa-user-group text-teal-400"></i>
+        <span class="text-slate-400 font-medium" data-i18n="label_target_students">学生人数:</span>
+        <input type="number" id="inputTargetCapacity" value="30" min="1" max="100" step="1" onchange="updateTargetCapacity()" class="w-12 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-center text-white focus:outline-none focus:border-teal-500 font-semibold">
+        <span class="text-slate-400" data-i18n="label_people_unit">人</span>
+      </div>
+
+      <!-- Language Selector -->
+      <div class="flex items-center space-x-1 bg-slate-800/90 p-1 rounded-lg border border-slate-700/70 text-xs">
+        <button onclick="setLanguage('zh')" id="lang-zh" class="px-2 py-1 rounded font-semibold transition bg-indigo-600 text-white">中文</button>
+        <button onclick="setLanguage('en')" id="lang-en" class="px-2 py-1 rounded font-semibold transition text-slate-400 hover:text-white">EN</button>
+        <button onclick="setLanguage('ms')" id="lang-ms" class="px-2 py-1 rounded font-semibold transition text-slate-400 hover:text-white">BM</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+    
+    <!-- Left Sidebar: Furniture Palette & Layout Presets -->
+    <aside class="w-full lg:w-80 bg-slate-900/95 border-r border-slate-800 flex flex-col overflow-y-auto custom-scrollbar p-4 space-y-5">
+      
+      <!-- Layout Presets Section -->
+      <div>
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center justify-between">
+          <span data-i18n="heading_presets"><i class="fa-solid fa-layer-group text-indigo-400 mr-1.5"></i> Preset Susun Atur PAK-21</span>
+        </h3>
+        <div class="grid grid-cols-2 gap-2">
+          <button onclick="loadPreset('groups')" class="p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/80 rounded-xl text-left transition group">
+            <div class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300" data-i18n="preset_group">Kumpulan 4-6</div>
+            <div class="text-[10px] text-slate-400" data-i18n="preset_group_sub">Kolaborasi Abad 21</div>
+          </button>
+          
+          <button onclick="loadPreset('ushape')" class="p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/80 rounded-xl text-left transition group">
+            <div class="text-xs font-semibold text-slate-200 group-hover:text-teal-300" data-i18n="preset_ushape">Bentuk U / Tapak Kuda</div>
+            <div class="text-[10px] text-slate-400" data-i18n="preset_ushape_sub">Pembentangan & Diskusi</div>
+          </button>
+
+          <button onclick="loadPreset('stations')" class="p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/80 rounded-xl text-left transition group">
+            <div class="text-xs font-semibold text-slate-200 group-hover:text-rose-300" data-i18n="preset_stations">Rotasi Stesen</div>
+            <div class="text-[10px] text-slate-400" data-i18n="preset_stations_sub">ICT, Diskusi & Gua</div>
+          </button>
+
+          <button onclick="loadPreset('fishbowl')" class="p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/80 rounded-xl text-left transition group">
+            <div class="text-xs font-semibold text-slate-200 group-hover:text-cyan-300" data-i18n="preset_fishbowl">Fishbowl Debate</div>
+            <div class="text-[10px] text-slate-400" data-i18n="preset_fishbowl_sub">Bulatan Perbahasan</div>
+          </button>
+
+          <button onclick="loadPreset('herringbone')" class="p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/80 rounded-xl text-left transition group">
+            <div class="text-xs font-semibold text-slate-200 group-hover:text-amber-300" data-i18n="preset_herringbone">Tulang Ikan</div>
+            <div class="text-[10px] text-slate-400" data-i18n="preset_herringbone_sub">Barisan Bersudut 45&deg;</div>
+          </button>
+
+          <button onclick="loadPreset('bistro')" class="p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/80 rounded-xl text-left transition group">
+            <div class="text-xs font-semibold text-slate-200 group-hover:text-fuchsia-300" data-i18n="preset_bistro">Gaya Kafe / Studio</div>
+            <div class="text-[10px] text-slate-400" data-i18n="preset_bistro_sub">Pembelajaran Fleksibel</div>
+          </button>
+
+          <button onclick="loadPreset('thornburg')" class="p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/80 rounded-xl text-left transition group col-span-2">
+            <div class="text-xs font-semibold text-slate-200 group-hover:text-emerald-300" data-i18n="preset_thornburg">Zon 3-Mod (Thornburg)</div>
+            <div class="text-[10px] text-slate-400" data-i18n="preset_thornburg_sub">Unggun Api, Gua & Kolam</div>
+          </button>
+        </div>
+      </div>
+
+      <hr class="border-slate-800">
+
+      <!-- Furniture Palette Section -->
+      <div>
+        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center justify-between">
+          <span data-i18n="heading_palette"><i class="fa-solid fa-couch text-teal-400 mr-1.5"></i> Perabot & Kelengkapan</span>
+        </h3>
+        <div class="grid grid-cols-2 gap-2" id="furniturePalette">
+          <!-- Populated dynamically via JS -->
+        </div>
+      </div>
+
+      <hr class="border-slate-800">
+
+      <!-- Item Properties Inspector (Active Selection) -->
+      <div id="inspectorPanel" class="bg-slate-950/60 border border-slate-800 rounded-xl p-3 space-y-3">
+        <div class="text-xs font-bold text-indigo-400 flex items-center justify-between">
+          <span data-i18n="heading_inspector"><i class="fa-solid fa-sliders mr-1"></i> Tetapan Perabot Selected</span>
+          <span id="selectedItemName" class="text-slate-300 font-normal text-[11px] truncate max-w-[120px]">Tiada Dipilih</span>
+        </div>
+        
+        <div id="inspectorControls" class="space-y-2 opacity-50 pointer-events-none">
+          <div>
+            <label class="text-[10px] text-slate-400 block mb-1" data-i18n="label_rotation">Putaran (Degree):</label>
+            <div class="flex items-center space-x-2">
+              <input type="range" id="inputRotation" min="0" max="345" step="15" value="0" oninput="updateSelectedProperty('rotation', this.value)" class="flex-1 accent-indigo-500">
+              <span id="txtRotationVal" class="text-xs text-slate-300 font-mono w-8 text-right">0&deg;</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="text-[10px] text-slate-400 block mb-1" data-i18n="label_color">Warna Item:</label>
+            <div class="flex items-center space-x-1.5" id="colorPickerContainer">
+              <!-- Colors injected by JS -->
+            </div>
+          </div>
+
+          <div class="pt-2 flex items-center justify-between gap-2">
+            <button onclick="rotateSelected(45)" class="flex-1 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs transition border border-slate-700">
+              <i class="fa-solid fa-rotate-right mr-1"></i> +45&deg;
+            </button>
+            <button onclick="deleteSelected()" class="flex-1 py-1 bg-rose-950/80 hover:bg-rose-900 text-rose-300 rounded text-xs transition border border-rose-800/80">
+              <i class="fa-solid fa-trash mr-1"></i> Padam
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+    <!-- Center Canvas & Workspace Top Toolbar -->
+    <main class="flex-1 flex flex-col bg-slate-950 relative overflow-hidden">
+      
+      <div class="bg-slate-900/90 border-b border-slate-800 p-2 px-4 flex flex-wrap items-center justify-between gap-2 shadow-md z-10">
+        <div class="flex items-center space-x-2 flex-wrap gap-y-2">
+          
+          <!-- Unified Mode Switcher Buttons -->
+          <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 gap-1">
+            <button class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold flex items-center space-x-1.5 shadow-sm transition">
+              <i class="fa-solid fa-map text-indigo-200"></i>
+              <span data-i18n="btn_2d_view">2D 平面布局</span>
+            </button>
+            <button id="btn3DView" onclick="open3DModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition">
+              <i class="fa-solid fa-cube text-amber-300"></i>
+              <span data-i18n="btn_3d_view">3D 空间全景</span>
+            </button>
+            <button onclick="exportCanvasImage()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold flex items-center space-x-1.5 shadow-md transition">
+              <i class="fa-solid fa-download text-emerald-200 text-sm"></i>
+              <span data-i18n="btn_export_image">保存布局图片</span>
+            </button>
+            <button onclick="printFullReport()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold flex items-center space-x-1.5 shadow-md border border-indigo-400/30 transition">
+              <i class="fa-solid fa-print text-white text-sm"></i>
+              <span data-i18n="btn_print">打印完整报告 (2D+3D+诊断)</span>
+            </button>
+          </div>
+
+          <button id="btnAIAnalyze" onclick="analyzeLayoutWithAI()" class="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg text-xs font-semibold flex items-center space-x-1.5 shadow-sm transition ml-1">
+            <i class="fa-solid fa-wand-magic-sparkles text-amber-200"></i>
+            <span data-i18n="btn_ai_analyze">Analisis AI PAK-21</span>
+          </button>
+
+          <div class="h-4 w-[1px] bg-slate-700 mx-1 hidden sm:block"></div>
+
+          <!-- Alignments -->
+          <div class="flex items-center space-x-1 bg-slate-800/80 p-1 rounded-lg border border-slate-700/60">
+            <button onclick="alignSelected('left')" title="Rapat Kiri" class="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition"><i class="fa-solid fa-align-left text-xs"></i></button>
+            <button onclick="alignSelected('center')" title="Tengah Horizontal" class="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition"><i class="fa-solid fa-align-center text-xs"></i></button>
+            <button onclick="alignSelected('top')" title="Rapat Atas" class="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition"><i class="fa-solid fa-align-justify text-xs rotate-90"></i></button>
+            <button onclick="distributeSelected()" title="Agah Seimbang" class="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition"><i class="fa-solid fa-arrows-left-right text-xs"></i></button>
+          </div>
+
+          <!-- Toggles -->
+          <label class="inline-flex items-center cursor-pointer text-xs text-slate-300 ml-1">
+            <input type="checkbox" id="chkPathways" onchange="drawCanvas()" class="sr-only peer" checked>
+            <div class="w-7 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-indigo-600 relative"></div>
+            <span class="ml-1.5" data-i18n="toggle_pathways">Laluan Traffic</span>
+          </label>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <button onclick="clearAllFurniture()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-rose-900/50 text-slate-300 hover:text-rose-200 border border-slate-700 rounded-lg text-xs transition" data-i18n="btn_clear">
+            <i class="fa-solid fa-rotate-left mr-1"></i> Reset
+          </button>
+        </div>
+      </div>
+
+      <!-- 2D Canvas Workspace Container -->
+      <div id="canvasContainer" class="flex-1 w-full h-full relative bg-slate-950 flex items-center justify-center p-4 overflow-hidden">
+        <canvas id="classroomCanvas" class="bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 cursor-crosshair"></canvas>
+      </div>
+
+      <!-- Bottom Real-time PAK-21 Evaluator Metric Bar -->
+      <div class="bg-slate-900/95 border-t border-slate-800 p-3 px-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs z-10">
+        <div class="bg-slate-800/60 p-2 rounded-xl border border-slate-700/50 flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+            <i class="fa-solid fa-users text-sm"></i>
+          </div>
+          <div>
+            <div class="text-[10px] text-slate-400" data-i18n="metric_capacity">Kapasiti Murid</div>
+            <div id="txtCapacity" class="font-bold text-sm text-white">0 Orang</div>
+          </div>
+        </div>
+
+        <div class="bg-slate-800/60 p-2 rounded-xl border border-slate-700/50 flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center">
+            <i class="fa-solid fa-comments text-sm"></i>
+          </div>
+          <div>
+            <div class="text-[10px] text-slate-400" data-i18n="metric_collab">Skor Kolaborasi</div>
+            <div id="txtCollabScore" class="font-bold text-sm text-teal-300">85% (Tinggi)</div>
+          </div>
+        </div>
+
+        <div class="bg-slate-800/60 p-2 rounded-xl border border-slate-700/50 flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+            <i class="fa-solid fa-eye text-sm"></i>
+          </div>
+          <div>
+            <div class="text-[10px] text-slate-400" data-i18n="metric_sightline">Pandangan Guru</div>
+            <div id="txtSightline" class="font-bold text-sm text-emerald-300">92% Jelas</div>
+          </div>
+        </div>
+
+        <div class="bg-slate-800/60 p-2 rounded-xl border border-slate-700/50 flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
+            <i class="fa-solid fa-shoe-prints text-sm"></i>
+          </div>
+          <div>
+            <div class="text-[10px] text-slate-400" data-i18n="metric_corridors">Kelancaran Laluan</div>
+            <div id="txtFlow" class="font-bold text-sm text-amber-300">Baik (1.2m)</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- 3D Room Visualizer Modal -->
+  <div id="modal3D" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden shadow-2xl relative">
+      <div class="p-3 px-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80 flex-wrap gap-2">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-indigo-600/30 border border-indigo-500/50 flex items-center justify-center text-indigo-400">
+            <i class="fa-solid fa-cube text-lg"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white" data-i18n="modal_3d_title">Visualisasi 3D Bilik Darjah</h3>
+            <p class="text-xs text-slate-400" data-i18n="modal_3d_sub">Gunakan tetikus untuk pusing (drag), Zum (scroll) dan ubah pandangan</p>
+          </div>
+        </div>
+        
+        <div class="flex items-center space-x-2 flex-wrap gap-1">
+          <button onclick="export3DImage()" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg text-xs flex items-center space-x-1.5 shadow-md transition mr-1">
+            <i class="fa-solid fa-camera text-emerald-200"></i>
+            <span data-i18n="btn_export_3d_photo">截取 3D 效果图</span>
+          </button>
+          <button onclick="printFullReport()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg text-xs flex items-center space-x-1.5 shadow-md transition mr-2">
+            <i class="fa-solid fa-print text-white"></i>
+            <span data-i18n="btn_print_3d_report">打印报告</span>
+          </button>
+
+          <button onclick="reset3DCamera('persp')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs border border-slate-700 flex items-center space-x-1 transition">
+            <i class="fa-solid fa-arrows-to-eye text-indigo-400"></i>
+            <span>Perspective</span>
+          </button>
+          <button onclick="reset3DCamera('top')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs border border-slate-700 flex items-center space-x-1 transition">
+            <i class="fa-solid fa-border-all text-teal-400"></i>
+            <span>Top Down</span>
+          </button>
+          <button onclick="close3DModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition ml-2">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+      <div id="canvas3DContainer" class="flex-1 w-full h-full relative bg-slate-950">
+        <div id="loading3D" class="absolute inset-0 flex items-center justify-center text-indigo-400 font-semibold space-x-2 bg-slate-950/60 z-10 hidden">
+          <i class="fa-solid fa-circle-notch fa-spin text-xl"></i>
+          <span>Menjana Model 3D...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Analysis Modal -->
+  <div id="modalAI" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-teal-600/30 border border-teal-500/50 flex items-center justify-center text-teal-400">
+            <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white" data-i18n="modal_ai_title">Laporan AI PAK-21 Consultant</h3>
+            <p class="text-xs text-slate-400" data-i18n="modal_ai_sub">Analisis Susun Atur & Cadangan Pedagogi Interaktif</p>
+          </div>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button onclick="printFullReport()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg text-xs flex items-center space-x-1.5 shadow-md transition">
+            <i class="fa-solid fa-print text-white"></i>
+            <span data-i18n="btn_print_ai_report">打印诊断报告</span>
+          </button>
+          <button onclick="closeAIModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </div>
+      <div class="p-6 overflow-y-auto space-y-4 text-slate-200 text-sm leading-relaxed custom-scrollbar" id="aiResultContent">
+        <div class="flex flex-col items-center justify-center py-12 space-y-3 text-teal-400">
+          <i class="fa-solid fa-circle-notch fa-spin text-3xl"></i>
+          <p class="font-medium text-slate-300" data-i18n="modal_ai_loading">AI sedang menganalisis susun atur bilik darjah anda...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hidden Printable Document Area -->
+  <div id="printReportArea" class="hidden p-8 bg-white text-slate-900 font-sans">
+    <div class="border-b-2 border-indigo-600 pb-4 mb-6 flex justify-between items-end">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900" id="printReportTitle">21世纪智能教室空间设计与 PAK-21 评估报告</h1>
+        <p class="text-xs text-slate-500" id="printReportSubtitle">Smart Classroom Layout, 3D Spatial Visualization & AI Pedagogical Audit</p>
+      </div>
+      <div class="text-right text-xs text-slate-600">
+        <div id="printDate" class="font-medium">日期: 2026-10-06</div>
+        <div>PAK-21 Standard Compliant</div>
+      </div>
+    </div>
+
+    <!-- Metrics Summary Bar -->
+    <div class="grid grid-cols-4 gap-4 p-3 bg-slate-100 rounded-lg border border-slate-300 text-center mb-6 text-xs">
+      <div>
+        <div class="text-slate-500 font-semibold" data-i18n="label_room_size">教室尺寸</div>
+        <div id="printRoomSize" class="font-bold text-slate-800 text-sm">10m × 8m</div>
+      </div>
+      <div>
+        <div class="text-slate-500 font-semibold" data-i18n="metric_capacity">学生容量</div>
+        <div id="printCapacity" class="font-bold text-slate-800 text-sm">30 人</div>
+      </div>
+      <div>
+        <div class="text-slate-500 font-semibold" data-i18n="metric_collab">协作评分</div>
+        <div id="printCollabScore" class="font-bold text-indigo-700 text-sm">85% (高)</div>
+      </div>
+      <div>
+        <div class="text-slate-500 font-semibold" data-i18n="metric_sightline">视线通透度</div>
+        <div id="printSightline" class="font-bold text-emerald-700 text-sm">94% 清晰</div>
+      </div>
+    </div>
+
+    <!-- Layout Visuals Section -->
+    <div class="grid grid-cols-2 gap-6 mb-8">
+      <div class="border border-slate-300 rounded-lg p-3 bg-slate-50 flex flex-col items-center">
+        <h3 class="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide">1. 2D 平面布局图 (Floor Plan)</h3>
+        <img id="print2DImage" class="w-full h-auto rounded border border-slate-200 max-h-[300px] object-contain" alt="2D Layout">
+      </div>
+      <div class="border border-slate-300 rounded-lg p-3 bg-slate-50 flex flex-col items-center">
+        <h3 class="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide">2. 3D 空间效果全景 (3D Perspective)</h3>
+        <img id="print3DImage" class="w-full h-auto rounded border border-slate-200 max-h-[300px] object-contain" alt="3D View">
+      </div>
+    </div>
+
+    <!-- AI Diagnostic Report Section -->
+    <div class="border border-slate-300 rounded-lg p-5 bg-white">
+      <h3 class="text-sm font-bold text-indigo-900 mb-3 border-b border-slate-200 pb-2 flex items-center gap-2">
+        <span>3. AI PAK-21 空间诊断与教学建议报告</span>
+      </h3>
+      <div id="printAIContentArea" class="text-xs text-slate-800 leading-relaxed space-y-3">
+        <!-- Injected via JS -->
+      </div>
+    </div>
+
+    <div class="mt-8 pt-4 border-t border-slate-300 text-center text-[10px] text-slate-500">
+      Generated by 21st Century Smart Classroom Layout Generator (PAK-21)
+    </div>
+  </div>
+
+  <script>
+    // Global State Variables
+    let roomWidth = 10;
+    let roomLength = 8;
+    let targetCapacity = 30;
+    let scale = 50;
+    let originX = 0;
+    let originY = 0;
+    let furnitureItems = [];
+    let selectedItem = null;
+    let isDragging = false;
+    let dragOffsetX = 0;
+    let dragOffsetY = 0;
+    let currentLang = 'zh';
+    let canvas = null;
+    let ctx = null;
+
+    // Furniture Catalog Definitions
+    const furnitureTypes = {
+      student_pod: {
+        name: { zh: '课桌椅 (Pod)', en: 'Student Desk', ms: 'Meja Murid' },
+        width: 0.8, length: 0.6, color: '#3b82f6', icon: 'fa-user-large', capacity: 1
+      },
+      group_table: {
+        name: { zh: '小组讨论圆桌', en: 'Group Table', ms: 'Meja Kumpulan' },
+        width: 1.6, length: 1.6, color: '#6366f1', icon: 'fa-users', capacity: 6
+      },
+      standing_desk: {
+        name: { zh: '站立式工作台', en: 'Standing Desk', ms: 'Meja Berdiri' },
+        width: 1.2, length: 0.6, color: '#f43f5e', icon: 'fa-laptop', capacity: 2
+      },
+      teacher_desk: {
+        name: { zh: '教师工作台', en: 'Teacher Desk', ms: 'Meja Guru' },
+        width: 1.5, length: 0.8, color: '#10b981', icon: 'fa-chalkboard-user', capacity: 1
+      },
+      smart_board: {
+        name: { zh: '智能互动大屏', en: 'Smart Board', ms: 'Papan Pintar' },
+        width: 2.0, length: 0.3, color: '#f59e0b', icon: 'fa-tv', capacity: 0
+      },
+      beanbag: {
+        name: { zh: '懒人沙发/豆袋', en: 'Beanbag', ms: 'Kerusi Bantal' },
+        width: 0.8, length: 0.8, color: '#ec4899', icon: 'fa-couch', capacity: 1
+      },
+      bookshelf: {
+        name: { zh: '图书/器材柜', en: 'Bookshelf', ms: 'Rak Buku' },
+        width: 1.2, length: 0.5, color: '#8b5cf6', icon: 'fa-book-open', capacity: 0
+      },
+      quiet_booth: {
+        name: { zh: '静音学习舱', en: 'Quiet Booth', ms: 'Ruang Senyap' },
+        width: 1.2, length: 1.0, color: '#14b8a6', icon: 'fa-warehouse', capacity: 1
+      }
+    };
+
+    // Multilingual Translations Dictionary
+    const i18n = {
+      zh: {
+        app_subtitle: "21世纪智能教室空间布局与设计导出",
+        label_room_size: "教室尺寸:",
+        label_target_students: "目标人数:",
+        label_people_unit: "人",
+        heading_presets: "PAK-21 预设布局",
+        preset_group: "小组协作 (4-6人)",
+        preset_group_sub: "21世纪团队合作",
+        preset_ushape: "U型 / 马蹄形",
+        preset_ushape_sub: "演讲与全班讨论",
+        preset_stations: "多任务工作站",
+        preset_stations_sub: "数字、讨论与静修区",
+        preset_fishbowl: "鱼缸辩论型",
+        preset_fishbowl_sub: "同心圆辩论圈",
+        preset_herringbone: "人字形 / 斜角型",
+        preset_herringbone_sub: "45度双人斜向排列",
+        preset_bistro: "咖啡馆 Flexible 模式",
+        preset_bistro_sub: "高低错落项目学习",
+        preset_thornburg: "多维 3-Mod 空间",
+        preset_thornburg_sub: "篝火研讨、静修与水坑",
+        heading_palette: "家具与设备库",
+        heading_inspector: "所选家具设置",
+        label_rotation: "旋转角度:",
+        label_color: "家具主题颜色:",
+        btn_2d_view: "2D 平面布局",
+        btn_export_image: "保存布局图片",
+        btn_print: "打印完整报告 (2D+3D+诊断)",
+        btn_print_3d_report: "打印报告",
+        btn_print_ai_report: "打印诊断报告",
+        btn_export_3d_photo: "截取 3D 效果图",
+        btn_3d_view: "3D 空间全景",
+        btn_ai_analyze: "AI PAK-21 诊断",
+        toggle_pathways: "显示通行走廊",
+        btn_clear: "重置",
+        metric_capacity: "容纳学生数",
+        metric_collab: "协作匹配度",
+        metric_sightline: "教师视线透明度",
+        metric_corridors: "走廊通畅度",
+        modal_3d_title: "3D 教室实景预览",
+        modal_3d_sub: "按住鼠标左键旋转视角，滚轮缩放",
+        modal_ai_title: "AI PAK-21 空间诊断报告",
+        modal_ai_sub: "智能空间布局分析与互动教学建议",
+        modal_ai_loading: "AI 正在分析您的教室空间布局...",
+        modal_ai_success_title: "诊断分析已完成",
+        modal_ai_success_sub: "基于 PAK-21 标准与人体工程学设计",
+        modal_ai_error: "获取 AI 诊断结果失败，请稍后再试。"
+      },
+      en: {
+        app_subtitle: "Interactive 21st Century Classroom Spatial Design & Layout Exporter",
+        label_room_size: "Room Dimensions:",
+        label_target_students: "Student Count:",
+        label_people_unit: "pax",
+        heading_presets: "PAK-21 Layout Presets",
+        preset_group: "Group Clusters (4-6)",
+        preset_group_sub: "Collaborative Learning",
+        preset_ushape: "Horseshoe / U-Shape",
+        preset_ushape_sub: "Presentation & Debates",
+        preset_stations: "Station Rotation",
+        preset_stations_sub: "ICT, Group & Quiet Zones",
+        preset_fishbowl: "Fishbowl Formation",
+        preset_fishbowl_sub: "Concentric Debate Rings",
+        preset_herringbone: "Herringbone / Angled",
+        preset_herringbone_sub: "45° Dual-Desk Rows",
+        preset_bistro: "Cafe & Studio Style",
+        preset_bistro_sub: "Flexible Multilevel Space",
+        preset_thornburg: "Thornburg 3-Zone Space",
+        preset_thornburg_sub: "Campfire, Cave & Watering Hole",
+        heading_palette: "Furniture Catalog",
+        heading_inspector: "Item Inspector",
+        label_rotation: "Rotation (Degrees):",
+        label_color: "Item Accent Color:",
+        btn_2d_view: "2D Layout Plan",
+        btn_export_image: "Save Layout Photo",
+        btn_print: "Print Full Report (2D+3D+Audit)",
+        btn_print_3d_report: "Print Report",
+        btn_print_ai_report: "Print Audit",
+        btn_export_3d_photo: "Capture 3D Photo",
+        btn_3d_view: "3D Spatial View",
+        btn_ai_analyze: "AI PAK-21 Audit",
+        toggle_pathways: "Traffic Corridors",
+        btn_clear: "Reset All",
+        metric_capacity: "Student Capacity",
+        metric_collab: "Collab Score",
+        metric_sightline: "Sightline Visibility",
+        metric_corridors: "Corridor Clearance",
+        modal_3d_title: "3D Classroom Preview",
+        modal_3d_sub: "Drag mouse to orbit, scroll to zoom",
+        modal_ai_title: "AI PAK-21 Spatial Audit Report",
+        modal_ai_sub: "Smart Spatial Layout Analysis & Interactive Pedagogical Advice",
+        modal_ai_loading: "AI is analyzing your classroom layout...",
+        modal_ai_success_title: "Analysis Completed",
+        modal_ai_success_sub: "Based on PAK-21 standards & ergonomics",
+        modal_ai_error: "Failed to retrieve AI analysis. Please try again."
+      },
+      ms: {
+        app_subtitle: "Penjana Rekabentuk Bilik Darjah & Eksport Pelan Abad Ke-21",
+        label_room_size: "Saiz Bilik:",
+        label_target_students: "Jumlah Murid:",
+        label_people_unit: "orang",
+        heading_presets: "Preset Susun Atur PAK-21",
+        preset_group: "Kumpulan 4-6",
+        preset_group_sub: "Kolaborasi Abad 21",
+        preset_ushape: "Bentuk U / Tapak Kuda",
+        preset_ushape_sub: "Pembentangan & Diskusi",
+        preset_stations: "Rotasi Stesen",
+        preset_stations_sub: "ICT, Diskusi & Gua",
+        preset_fishbowl: "Fishbowl Debate",
+        preset_fishbowl_sub: "Bulatan Perbahasan",
+        preset_herringbone: "Tulang Ikan",
+        preset_herringbone_sub: "Barisan Bersudut 45°",
+        preset_bistro: "Gaya Kafe / Studio",
+        preset_bistro_sub: "Pembelajaran Fleksibel",
+        preset_thornburg: "Zon 3-Mod (Thornburg)",
+        preset_thornburg_sub: "Unggun Api, Gua & Kolam",
+        heading_palette: "Perabot & Kelengkapan",
+        heading_inspector: "Tetapan Perabot",
+        label_rotation: "Putaran (Ijazah):",
+        label_color: "Warna Item:",
+        btn_2d_view: "Pelan 2D",
+        btn_export_image: "Simpan Gambar Pelan",
+        btn_print: "Cetak Laporan Lengkap (2D+3D+Diagnosis)",
+        btn_print_3d_report: "Cetak Laporan",
+        btn_print_ai_report: "Cetak Diagnosis",
+        btn_export_3d_photo: "Tangkap Foto 3D",
+        btn_3d_view: "Pandangan 3D",
+        btn_ai_analyze: "Analisis AI PAK-21",
+        toggle_pathways: "Laluan Traffic",
+        btn_clear: "Reset",
+        metric_capacity: "Kapasiti Murid",
+        metric_collab: "Skor Kolaborasi",
+        metric_sightline: "Pandangan Guru",
+        metric_corridors: "Kelancaran Laluan",
+        modal_3d_title: "Visualisasi 3D Bilik Darjah",
+        modal_3d_sub: "Gunakan tetikus untuk pusing (drag), Zum (scroll)",
+        modal_ai_title: "Laporan AI PAK-21 Consultant",
+        modal_ai_sub: "Analisis Susun Atur & Cadangan Pedagogi Interaktif",
+        modal_ai_loading: "AI sedang menganalisis susun atur bilik darjah anda...",
+        modal_ai_success_title: "Analisis Selesai",
+        modal_ai_success_sub: "Berdasarkan piawaian PAK-21 & Rekabentuk Ergonomik",
+        modal_ai_error: "Gagal mendapat respons daripada ejen AI. Sila cuba lagi."
+      }
+    };
+
+    const colorPalette = ['#3b82f6', '#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6', '#ef4444'];
+
+    window.addEventListener('DOMContentLoaded', () => {
+      canvas = document.getElementById('classroomCanvas');
+      ctx = canvas.getContext('2d');
+
+      renderFurniturePalette();
+      renderColorPicker();
+      resizeCanvas();
+      loadPreset('groups');
+
+      window.addEventListener('resize', resizeCanvas);
+      setupCanvasEvents();
+    });
+
+    function setLanguage(lang) {
+      currentLang = lang;
+      ['ms', 'en', 'zh'].forEach(l => {
+        const btn = document.getElementById(`lang-${l}`);
+        if (btn) {
+          if (l === lang) {
+            btn.className = "px-2 py-1 rounded font-semibold transition bg-indigo-600 text-white";
+          } else {
+            btn.className = "px-2 py-1 rounded font-semibold transition text-slate-400 hover:text-white";
+          }
+        }
+      });
+
+      // Update all elements with data-i18n
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (i18n[lang] && i18n[lang][key]) {
+          el.innerText = i18n[lang][key];
+        }
+      });
+
+      renderFurniturePalette();
+      updateInspector();
+      drawCanvas();
+      updateEvaluator();
+    }
+
+    function renderFurniturePalette() {
+      const container = document.getElementById('furniturePalette');
+      if (!container) return;
+      container.innerHTML = '';
+
+      Object.keys(furnitureTypes).forEach(typeKey => {
+        const item = furnitureTypes[typeKey];
+        const localizedName = (typeof item.name === 'object') ? (item.name[currentLang] || item.name.en) : item.name;
+
+        const card = document.createElement('button');
+        card.className = "p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/80 rounded-xl flex items-center space-x-2 transition text-left group";
+        card.onclick = () => addFurniture(typeKey);
+        card.innerHTML = `
+          <div class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs shadow-sm flex-shrink-0" style="background-color: ${item.color}">
+            <i class="fa-solid ${item.icon}"></i>
+          </div>
+          <div class="overflow-hidden">
+            <div class="text-[11px] font-semibold text-slate-200 group-hover:text-indigo-300 truncate" title="${localizedName}">${localizedName}</div>
+            <div class="text-[9px] text-slate-400">${item.width}m &times; ${item.length}m</div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function renderColorPicker() {
+      const container = document.getElementById('colorPickerContainer');
+      if (!container) return;
+      container.innerHTML = '';
+      colorPalette.forEach(color => {
+        const btn = document.createElement('button');
+        btn.className = "w-5 h-5 rounded-full border border-slate-600 hover:scale-110 transition shadow-sm";
+        btn.style.backgroundColor = color;
+        btn.onclick = () => updateSelectedProperty('color', color);
+        container.appendChild(btn);
+      });
+    }
+
+    function updateRoomDimensions() {
+      const wInput = parseFloat(document.getElementById('inputRoomW').value);
+      const lInput = parseFloat(document.getElementById('inputRoomL').value);
+
+      if (!isNaN(wInput) && wInput >= 4) roomWidth = wInput;
+      if (!isNaN(lInput) && lInput >= 4) roomLength = lInput;
+
+      resizeCanvas();
+    }
+
+    function updateTargetCapacity() {
+      const val = parseInt(document.getElementById('inputTargetCapacity').value);
+      if (!isNaN(val) && val >= 1) {
+        targetCapacity = val;
+        updateEvaluator();
+      }
+    }
+
+    function resizeCanvas() {
+      const container = document.getElementById('canvasContainer');
+      if (!container || !canvas) return;
+
+      const availWidth = container.clientWidth - 32;
+      const availHeight = container.clientHeight - 32;
+
+      // Fit classroom proportion with margin
+      const scaleX = availWidth / roomWidth;
+      const scaleY = availHeight / roomLength;
+      scale = Math.min(scaleX, scaleY, 75); // max 75px per meter
+
+      canvas.width = roomWidth * scale;
+      canvas.height = roomLength * scale;
+
+      originX = 0;
+      originY = 0;
+
+      drawCanvas();
+    }
+
+    // --- Furniture Logic & Layout Presets ---
+    function addFurniture(type) {
+      const typeInfo = furnitureTypes[type];
+      if (!typeInfo) return;
+
+      const newItem = {
+        id: Date.now() + Math.random(),
+        type: type,
+        x: roomWidth / 2,
+        y: roomLength / 2,
+        rotation: 0,
+        color: typeInfo.color
+      };
+
+      furnitureItems.push(newItem);
+      selectItem(newItem);
+      drawCanvas();
+      updateEvaluator();
+    }
+
+    function loadPreset(presetName) {
+      furnitureItems = [];
+      
+      // Always place Smart Board at top wall
+      furnitureItems.push({
+        id: 'board-1',
+        type: 'smart_board',
+        x: roomWidth / 2,
+        y: 0.3,
+        rotation: 0,
+        color: '#f59e0b'
+      });
+
+      // Always place Teacher Station near top right
+      furnitureItems.push({
+        id: 'teacher-1',
+        type: 'teacher_desk',
+        x: Math.min(roomWidth - 1.2, roomWidth * 0.85),
+        y: 1.2,
+        rotation: 0,
+        color: '#10b981'
+      });
+
+      if (presetName === 'groups') {
+        const clusters = [
+          { cx: roomWidth * 0.3, cy: roomLength * 0.4 },
+          { cx: roomWidth * 0.7, cy: roomLength * 0.4 },
+          { cx: roomWidth * 0.3, cy: roomLength * 0.75 },
+          { cx: roomWidth * 0.7, cy: roomLength * 0.75 },
+        ];
+
+        clusters.forEach((c) => {
+          furnitureItems.push({ id: Math.random(), type: 'group_table', x: c.cx, y: c.cy, rotation: 0, color: '#6366f1' });
+        });
+      } else if (presetName === 'ushape') {
+        const uPoints = [
+          { x: 2.0, y: 2.5, rot: 90 }, { x: 2.0, y: 4.0, rot: 90 }, { x: 2.0, y: 5.5, rot: 90 },
+          { x: roomWidth - 2.0, y: 2.5, rot: 270 }, { x: roomWidth - 2.0, y: 4.0, rot: 270 }, { x: roomWidth - 2.0, y: 5.5, rot: 270 },
+          { x: roomWidth * 0.35, y: 6.5, rot: 0 }, { x: roomWidth * 0.65, y: 6.5, rot: 0 }
+        ];
+
+        uPoints.forEach(pt => {
+          furnitureItems.push({ id: Math.random(), type: 'student_pod', x: pt.x, y: pt.y, rotation: pt.rot, color: '#3b82f6' });
+        });
+      } else if (presetName === 'stations') {
+        furnitureItems.push({ id: Math.random(), type: 'standing_desk', x: 2.0, y: 2.0, rotation: 0, color: '#f43f5e' });
+        furnitureItems.push({ id: Math.random(), type: 'group_table', x: roomWidth * 0.32, y: roomLength * 0.6, rotation: 0, color: '#6366f1' });
+        furnitureItems.push({ id: Math.random(), type: 'bookshelf', x: roomWidth - 1.0, y: roomLength * 0.45, rotation: 90, color: '#8b5cf6' });
+        furnitureItems.push({ id: Math.random(), type: 'student_pod', x: roomWidth - 2.2, y: roomLength * 0.45, rotation: 270, color: '#3b82f6' });
+        furnitureItems.push({ id: Math.random(), type: 'quiet_booth', x: 1.5, y: roomLength - 1.2, rotation: 0, color: '#14b8a6' });
+        furnitureItems.push({ id: Math.random(), type: 'beanbag', x: roomWidth - 1.5, y: roomLength - 1.2, rotation: 0, color: '#ec4899' });
+        furnitureItems.push({ id: Math.random(), type: 'beanbag', x: roomWidth - 2.5, y: roomLength - 1.2, rotation: 0, color: '#ec4899' });
+      } else if (presetName === 'fishbowl') {
+        const centerX = roomWidth * 0.5;
+        const centerY = roomLength * 0.55;
+
+        furnitureItems.push({ id: Math.random(), type: 'student_pod', x: centerX - 1.2, y: centerY, rotation: 90, color: '#06b6d4' });
+        furnitureItems.push({ id: Math.random(), type: 'student_pod', x: centerX + 1.2, y: centerY, rotation: 270, color: '#06b6d4' });
+        furnitureItems.push({ id: Math.random(), type: 'student_pod', x: centerX, y: centerY - 1.0, rotation: 180, color: '#06b6d4' });
+        furnitureItems.push({ id: Math.random(), type: 'student_pod', x: centerX, y: centerY + 1.0, rotation: 0, color: '#06b6d4' });
+
+        const radiusX = 3.0;
+        const radiusY = 2.2;
+        const totalOuter = 8;
+        for (let i = 0; i < totalOuter; i++) {
+          const angle = (i / totalOuter) * Math.PI * 2;
+          const px = centerX + Math.cos(angle) * radiusX;
+          const py = centerY + Math.sin(angle) * radiusY;
+          const deg = Math.round(((angle + Math.PI / 2) * 180) / Math.PI) % 360;
+          furnitureItems.push({ id: Math.random(), type: 'student_pod', x: px, y: py, rotation: deg, color: '#3b82f6' });
+        }
+      } else if (presetName === 'herringbone') {
+        const rowYs = [2.2, 3.8, 5.4, 6.8];
+        rowYs.forEach(y => {
+          furnitureItems.push({ id: Math.random(), type: 'student_pod', x: roomWidth * 0.28, y: y, rotation: 45, color: '#f59e0b' });
+          furnitureItems.push({ id: Math.random(), type: 'student_pod', x: roomWidth * 0.38, y: y - 0.2, rotation: 45, color: '#f59e0b' });
+          furnitureItems.push({ id: Math.random(), type: 'student_pod', x: roomWidth * 0.72, y: y, rotation: 315, color: '#3b82f6' });
+          furnitureItems.push({ id: Math.random(), type: 'student_pod', x: roomWidth * 0.62, y: y - 0.2, rotation: 315, color: '#3b82f6' });
+        });
+      } else if (presetName === 'bistro') {
+        furnitureItems.push({ id: Math.random(), type: 'standing_desk', x: roomWidth * 0.28, y: 2.2, rotation: 0, color: '#f43f5e' });
+        furnitureItems.push({ id: Math.random(), type: 'group_table', x: roomWidth * 0.75, y: 3.0, rotation: 0, color: '#6366f1' });
+        furnitureItems.push({ id: Math.random(), type: 'student_pod', x: roomWidth * 0.25, y: 4.8, rotation: 45, color: '#3b82f6' });
+        furnitureItems.push({ id: Math.random(), type: 'student_pod', x: roomWidth * 0.35, y: 5.5, rotation: 45, color: '#3b82f6' });
+        furnitureItems.push({ id: Math.random(), type: 'beanbag', x: roomWidth * 0.75, y: 6.0, rotation: 0, color: '#ec4899' });
+        furnitureItems.push({ id: Math.random(), type: 'beanbag', x: roomWidth * 0.88, y: 6.0, rotation: 0, color: '#ec4899' });
+        furnitureItems.push({ id: Math.random(), type: 'bookshelf', x: 1.0, y: roomLength - 1.2, rotation: 0, color: '#8b5cf6' });
+      } else if (presetName === 'thornburg') {
+        furnitureItems.push({ id: Math.random(), type: 'group_table', x: roomWidth * 0.35, y: roomLength * 0.4, rotation: 0, color: '#6366f1' });
+        furnitureItems.push({ id: Math.random(), type: 'group_table', x: roomWidth * 0.65, y: roomLength * 0.4, rotation: 0, color: '#6366f1' });
+        furnitureItems.push({ id: Math.random(), type: 'quiet_booth', x: 1.2, y: roomLength - 1.2, rotation: 0, color: '#14b8a6' });
+        furnitureItems.push({ id: Math.random(), type: 'beanbag', x: roomWidth - 1.2, y: roomLength - 1.2, rotation: 0, color: '#ec4899' });
+        furnitureItems.push({ id: Math.random(), type: 'beanbag', x: roomWidth - 2.2, y: roomLength - 1.2, rotation: 0, color: '#ec4899' });
+        furnitureItems.push({ id: Math.random(), type: 'bookshelf', x: 1.0, y: 3.0, rotation: 90, color: '#8b5cf6' });
+      }
+
+      selectedItem = null;
+      updateInspector();
+      drawCanvas();
+      updateEvaluator();
+    }
+
+    function drawCanvas() {
+      if (!ctx) return;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Draw Grid Background (0.5m interval)
+      ctx.strokeStyle = '#1e293b';
+      ctx.lineWidth = 1;
+      const step = 0.5 * scale;
+
+      for (let x = 0; x <= canvas.width; x += step) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, canvas.height);
+        ctx.stroke();
+      }
+      for (let y = 0; y <= canvas.height; y += step) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(canvas.width, y);
+        ctx.stroke();
+      }
+
+      // Draw Traffic Flow Corridors (if toggled)
+      if (document.getElementById('chkPathways') && document.getElementById('chkPathways').checked) {
+        ctx.strokeStyle = 'rgba(52, 211, 153, 0.25)';
+        ctx.lineWidth = 1.2 * scale;
+        ctx.lineCap = 'round';
+        ctx.setLineDash([8, 8]);
+
+        ctx.beginPath();
+        ctx.moveTo(roomWidth * 0.5 * scale, (roomLength - 0.5) * scale);
+        ctx.lineTo(roomWidth * 0.5 * scale, 1.5 * scale);
+        ctx.stroke();
+
+        ctx.setLineDash([]);
+      }
+
+      // Draw Room Outer Border Walls
+      ctx.strokeStyle = '#475569';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(0, 0, canvas.width, canvas.height);
+
+      // Draw Entrance Door Marker (Bottom Center)
+      ctx.fillStyle = '#6366f1';
+      ctx.fillRect((roomWidth / 2 - 0.6) * scale, canvas.height - 6, 1.2 * scale, 6);
+
+      // Draw All Furniture Items
+      furnitureItems.forEach(item => {
+        const typeInfo = furnitureTypes[item.type] || { width: 1, length: 1 };
+        const w = typeInfo.width * scale;
+        const h = typeInfo.length * scale;
+
+        ctx.save();
+        ctx.translate(item.x * scale, item.y * scale);
+        ctx.rotate((item.rotation || 0) * Math.PI / 180);
+
+        // Selection Highlight Ring
+        if (selectedItem && selectedItem.id === item.id) {
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 3;
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 10;
+          ctx.strokeRect(-w / 2 - 4, -h / 2 - 4, w + 8, h + 8);
+          ctx.shadowBlur = 0;
+        }
+
+        // Furniture Fill Shape
+        ctx.fillStyle = item.color || '#3b82f6';
+        ctx.beginPath();
+        if (item.type === 'group_table' || item.type === 'beanbag') {
+          ctx.arc(0, 0, w / 2, 0, Math.PI * 2);
+        } else {
+          ctx.roundRect(-w / 2, -h / 2, w, h, 6);
+        }
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        // Furniture Icon Label
+        ctx.fillStyle = '#ffffff';
+        ctx.font = `${Math.max(10, Math.min(16, w * 0.3))}px "Font Awesome 6 Free", Inter`;
+        ctx.fontWeight = "900";
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        let iconChar = '\u25a2';
+        if (item.type === 'student_pod') iconChar = '\uf007';
+        if (item.type === 'group_table') iconChar = '\uf0c0';
+        if (item.type === 'standing_desk') iconChar = '\uf109';
+        if (item.type === 'teacher_desk') iconChar = '\uf51c';
+        if (item.type === 'smart_board') iconChar = '\uf26c';
+        if (item.type === 'beanbag') iconChar = '\uf7b8';
+        if (item.type === 'bookshelf') iconChar = '\uf02d';
+        if (item.type === 'quiet_booth') iconChar = '\uf6e2';
+
+        ctx.fillText(iconChar, 0, 0);
+
+        ctx.restore();
+      });
+    }
+
+    function setupCanvasEvents() {
+      canvas.addEventListener('mousedown', handlePointerDown);
+      canvas.addEventListener('mousemove', handlePointerMove);
+      window.addEventListener('mouseup', handlePointerUp);
+
+      canvas.addEventListener('touchstart', (e) => {
+        if (e.touches.length === 1) handlePointerDown(e.touches[0]);
+      });
+      canvas.addEventListener('touchmove', (e) => {
+        if (e.touches.length === 1) handlePointerMove(e.touches[0]);
+      });
+      window.addEventListener('touchend', handlePointerUp);
+    }
+
+    function getCanvasCoords(e) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+
+      return {
+        x: (clientX - rect.left) / scale,
+        y: (clientY - rect.top) / scale
+      };
+    }
+
+    function handlePointerDown(e) {
+      const pos = getCanvasCoords(e);
+
+      for (let i = furnitureItems.length - 1; i >= 0; i--) {
+        const item = furnitureItems[i];
+        const typeInfo = furnitureTypes[item.type] || { width: 1, length: 1 };
+        const halfW = typeInfo.width / 2;
+        const halfH = typeInfo.length / 2;
+
+        if (pos.x >= item.x - halfW && pos.x <= item.x + halfW &&
+            pos.y >= item.y - halfH && pos.y <= item.y + halfH) {
+          selectItem(item);
+          isDragging = true;
+          dragOffsetX = pos.x - item.x;
+          dragOffsetY = pos.y - item.y;
+          drawCanvas();
+          return;
+        }
+      }
+
+      selectItem(null);
+      drawCanvas();
+    }
+
+    function handlePointerMove(e) {
+      if (!isDragging || !selectedItem) return;
+      const pos = getCanvasCoords(e);
+
+      let newX = pos.x - dragOffsetX;
+      let newY = pos.y - dragOffsetY;
+
+      newX = Math.round(newX * 4) / 4;
+      newY = Math.round(newY * 4) / 4;
+
+      const typeInfo = furnitureTypes[selectedItem.type] || { width: 1, length: 1 };
+      const halfW = typeInfo.width / 2;
+      const halfH = typeInfo.length / 2;
+
+      selectedItem.x = Math.max(halfW, Math.min(roomWidth - halfW, newX));
+      selectedItem.y = Math.max(halfH, Math.min(roomLength - halfH, newY));
+
+      drawCanvas();
+      updateEvaluator();
+    }
+
+    function handlePointerUp() {
+      isDragging = false;
+    }
+
+    function selectItem(item) {
+      selectedItem = item;
+      updateInspector();
+    }
+
+    function updateInspector() {
+      const nameEl = document.getElementById('selectedItemName');
+      const controlsEl = document.getElementById('inspectorControls');
+      const rotInput = document.getElementById('inputRotation');
+      const rotTxt = document.getElementById('txtRotationVal');
+
+      if (selectedItem) {
+        const typeInfo = furnitureTypes[selectedItem.type];
+        const localizedName = typeInfo ? ((typeof typeInfo.name === 'object') ? (typeInfo.name[currentLang] || typeInfo.name.en) : typeInfo.name) : 'Item';
+        nameEl.innerText = localizedName;
+        controlsEl.classList.remove('opacity-50', 'pointer-events-none');
+        rotInput.value = selectedItem.rotation || 0;
+        rotTxt.innerText = `${selectedItem.rotation || 0}°`;
+      } else {
+        const noSelectTxt = currentLang === 'zh' ? '未选择家具' : (currentLang === 'ms' ? 'Tiada Dipilih' : 'None Selected');
+        nameEl.innerText = noSelectTxt;
+        controlsEl.classList.add('opacity-50', 'pointer-events-none');
+        rotInput.value = 0;
+        rotTxt.innerText = '0°';
+      }
+    }
+
+    function updateSelectedProperty(prop, val) {
+      if (!selectedItem) return;
+      if (prop === 'rotation') {
+        selectedItem.rotation = parseInt(val) || 0;
+        document.getElementById('txtRotationVal').innerText = `${selectedItem.rotation}°`;
+      } else if (prop === 'color') {
+        selectedItem.color = val;
+      }
+      drawCanvas();
+    }
+
+    function rotateSelected(deg) {
+      if (!selectedItem) return;
+      selectedItem.rotation = ((selectedItem.rotation || 0) + deg) % 360;
+      updateInspector();
+      drawCanvas();
+    }
+
+    function deleteSelected() {
+      if (!selectedItem) return;
+      furnitureItems = furnitureItems.filter(i => i.id !== selectedItem.id);
+      selectedItem = null;
+      updateInspector();
+      drawCanvas();
+      updateEvaluator();
+    }
+
+    function clearAllFurniture() {
+      furnitureItems = [];
+      selectedItem = null;
+      updateInspector();
+      drawCanvas();
+      updateEvaluator();
+    }
+
+    function alignSelected(mode) {
+      if (!selectedItem) return;
+      if (mode === 'left') selectedItem.x = 1.0;
+      if (mode === 'center') selectedItem.x = roomWidth / 2;
+      if (mode === 'top') selectedItem.y = 1.0;
+      drawCanvas();
+      updateEvaluator();
+    }
+
+    function distributeSelected() {
+      if (furnitureItems.length < 2) return;
+      furnitureItems.sort((a, b) => a.x - b.x);
+      const startX = 1.5;
+      const endX = roomWidth - 1.5;
+      const step = (endX - startX) / Math.max(1, furnitureItems.length - 1);
+      furnitureItems.forEach((item, idx) => {
+        item.x = startX + idx * step;
+      });
+      drawCanvas();
+      updateEvaluator();
+    }
+
+    function updateEvaluator() {
+      let totalCapacity = 0;
+      let collabCount = 0;
+
+      furnitureItems.forEach(item => {
+        const typeInfo = furnitureTypes[item.type];
+        if (typeInfo) {
+          totalCapacity += typeInfo.capacity || 0;
+          if (item.type === 'group_table' || item.type === 'student_pod' || item.type === 'quiet_booth' || item.type === 'standing_desk') {
+            collabCount += (typeInfo.capacity || 1);
+          }
+        }
+      });
+
+      const capEl = document.getElementById('txtCapacity');
+      if (capEl) {
+        const isMet = totalCapacity >= targetCapacity;
+        const statusText = isMet
+          ? `<span class="text-emerald-400 font-bold">${totalCapacity} / ${targetCapacity}</span> <span class="text-[10px] text-emerald-300">(${currentLang === 'zh' ? '已达标' : (currentLang === 'ms' ? 'Cukup' : 'Met')})</span>`
+          : `<span class="text-amber-400 font-bold">${totalCapacity} / ${targetCapacity}</span> <span class="text-[10px] text-amber-300">(${currentLang === 'zh' ? `还差${targetCapacity - totalCapacity}人` : (currentLang === 'ms' ? `Kurang ${targetCapacity - totalCapacity}` : `-${targetCapacity - totalCapacity}`)})</span>`;
+        capEl.innerHTML = statusText;
+      }
+
+      const collabRatio = totalCapacity > 0 ? Math.min(100, Math.round((collabCount / totalCapacity) * 100)) : 0;
+      document.getElementById('txtCollabScore').innerText = `${collabRatio}% (${collabRatio > 70 ? '优秀/Tinggi' : '一般/Sederhana'})`;
+
+      const hasBoard = furnitureItems.some(i => i.type === 'smart_board');
+      const sightlineScore = hasBoard ? (currentLang === 'zh' ? '94% 清晰' : '94% Clear') : (currentLang === 'zh' ? '需放置智能板' : 'Add Board');
+      document.getElementById('txtSightline').innerText = sightlineScore;
+    }
+
+    // --- Layout Export & Print Functions ---
+    function exportCanvasImage() {
+      if (!canvas) return;
+
+      // Create a clean high-resolution offscreen canvas with watermark title
+      const exportCanvas = document.createElement('canvas');
+      const padding = 40;
+      const headerHeight = 70;
+      exportCanvas.width = canvas.width + padding * 2;
+      exportCanvas.height = canvas.height + padding * 2 + headerHeight;
+
+      const eCtx = exportCanvas.getContext('2d');
+
+      // Background
+      eCtx.fillStyle = '#0f172a';
+      eCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+      // Header Text
+      eCtx.fillStyle = '#ffffff';
+      eCtx.font = 'bold 20px Inter, sans-serif';
+      const titleText = currentLang === 'zh' ? "21世纪智能教室空间布局图 (PAK-21)" : "21st Century Smart Classroom Layout (PAK-21)";
+      eCtx.fillText(titleText, padding, 35);
+
+      eCtx.fillStyle = '#94a3b8';
+      eCtx.font = '12px Inter, sans-serif';
+      eCtx.fillText(`${currentLang === 'zh' ? '教室尺寸' : 'Room Size'}: ${roomWidth}m × ${roomLength}m | ${currentLang === 'zh' ? '学生容纳' : 'Capacity'}: ${document.getElementById('txtCapacity')?.innerText || ''}`, padding, 55);
+
+      // Draw original canvas
+      eCtx.drawImage(canvas, padding, headerHeight + padding);
+
+      // Export file download
+      const link = document.createElement('a');
+      link.download = `Classroom_Layout_${roomWidth}x${roomLength}m_${Date.now()}.png`;
+      link.href = exportCanvas.toDataURL('image/png');
+      link.click();
+    }
+
+    function printFullReport() {
+      // 1. Set metadata
+      document.getElementById('printDate').innerText = `Date: ${new Date().toLocaleDateString()}`;
+      document.getElementById('printRoomSize').innerText = `${roomWidth}m × ${roomLength}m`;
+      
+      const capText = document.getElementById('txtCapacity') ? document.getElementById('txtCapacity').innerText : `${targetCapacity} pax`;
+      document.getElementById('printCapacity').innerText = capText;
+      document.getElementById('printCollabScore').innerText = document.getElementById('txtCollabScore') ? document.getElementById('txtCollabScore').innerText : '85%';
+      document.getElementById('printSightline').innerText = document.getElementById('txtSightline') ? document.getElementById('txtSightline').innerText : 'Clear';
+
+      // 2. Capture 2D Canvas Image
+      if (canvas) {
+        document.getElementById('print2DImage').src = canvas.toDataURL('image/png');
+      }
+
+      // 3. Capture or Generate 3D Image Snapshot
+      const snapshot3D = generate3DSnapshotDataUrl();
+      document.getElementById('print3DImage').src = snapshot3D;
+
+      // 4. Set AI Diagnostic Content
+      const currentAiHTML = document.getElementById('aiResultContent').innerHTML;
+      const isDefaultAiState = currentAiHTML.includes('fa-circle-notch');
+
+      if (!isDefaultAiState && currentAiHTML.trim() !== '') {
+        document.getElementById('printAIContentArea').innerHTML = currentAiHTML;
+      } else {
+        // Fallback default structured PAK-21 report if AI hasn't been executed
+        const totalSeats = furnitureItems.reduce((acc, i) => acc + (furnitureTypes[i.type]?.capacity || 0), 0);
+        document.getElementById('printAIContentArea').innerHTML = `
+          <div class="space-y-2">
+            <p><strong>1. 空间容量与布局匹配:</strong> 教室规格为 ${roomWidth}m × ${roomLength}m，当前放置家具总容量为 <strong>${totalSeats} 人</strong>（目标容量 ${targetCapacity} 人）。${totalSeats >= targetCapacity ? '布局充分满足教学容量需求。' : '建议适当补充分组桌或多功能座椅以满足目标容量。'}</p>
+            <p><strong>2. 21世纪协作能力 (PAK-21 Collaboration):</strong> 当前采用灵活式模块化空间规划，协作评分达到 <strong>${document.getElementById('txtCollabScore')?.innerText || '85%'}</strong>，有利于小组讨论、探究式学习 (PBL) 与互动展示。</p>
+            <p><strong>3. 视线与通行走廊:</strong> 智能大屏视线清晰，中心主干通道通畅（建议维持 1.2m 以上主通道），便于教师巡视指导与学生快速组队。</p>
+            <p><strong>4. 教学策略建议:</strong> 推荐结合“站立讨论区”、“图书/器材区”及“静修区”实施多任务轮转教学 (Station Rotation)。</p>
+          </div>
+        `;
+      }
+
+      // 5. Trigger Print Window
+      setTimeout(() => {
+        window.print();
+      }, 200);
+    }
+
+    function generate3DSnapshotDataUrl() {
+      if (renderer3D && scene3D && camera3D) {
+        renderer3D.render(scene3D, camera3D);
+        return renderer3D.domElement.toDataURL('image/png');
+      }
+
+      // Create an offscreen WebGL renderer for clean 3D snapshot
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = 800;
+      offCanvas.height = 500;
+      const tempRenderer = new THREE.WebGLRenderer({ canvas: offCanvas, antialias: true, preserveDrawingBuffer: true });
+      tempRenderer.setPixelRatio(1);
+      tempRenderer.setSize(800, 500);
+
+      const tempScene = new THREE.Scene();
+      tempScene.background = new THREE.Color(0x0f172a);
+
+      const tempCamera = new THREE.PerspectiveCamera(45, 800 / 500, 0.1, 1000);
+      tempCamera.position.set(roomWidth / 2, Math.max(roomWidth, roomLength) * 1.1, roomLength * 1.3);
+      tempCamera.lookAt(roomWidth / 2, 0, roomLength / 2);
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+      tempScene.add(ambientLight);
+      const dirLight = new THREE.DirectionalLight(0xfff7ed, 0.9);
+      dirLight.position.set(roomWidth * 0.5, 12, roomLength * 0.5);
+      tempScene.add(dirLight);
+
+      // Floor
+      const floorGeo = new THREE.PlaneGeometry(roomWidth, roomLength);
+      const floorMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.set(roomWidth / 2, 0, roomLength / 2);
+      tempScene.add(floor);
+
+      // Grid
+      const grid = new THREE.GridHelper(Math.max(roomWidth, roomLength) * 1.4, 20, 0x6366f1, 0x334155);
+      grid.position.set(roomWidth / 2, 0.01, roomLength / 2);
+      tempScene.add(grid);
+
+      // Furniture
+      furnitureItems.forEach(item => {
+        const typeInfo = furnitureTypes[item.type] || { width: 1, length: 1, color: '#3b82f6' };
+        const group = new THREE.Group();
+        group.position.set(item.x, 0, item.y);
+        group.rotation.y = -(item.rotation || 0) * (Math.PI / 180);
+
+        let meshColor = item.color || typeInfo.color || '#3b82f6';
+        let colorHex = parseInt(meshColor.replace('#', '0x')) || 0x3b82f6;
+        const w = typeInfo.width;
+        const l = typeInfo.length;
+
+        if (item.type === 'smart_board') {
+          const boardGeo = new THREE.BoxGeometry(w, 1.3, 0.08);
+          const boardMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+          const board = new THREE.Mesh(boardGeo, boardMat);
+          board.position.y = 1.4;
+          const screenGeo = new THREE.PlaneGeometry(w - 0.2, 1.1);
+          const screenMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+          const screen = new THREE.Mesh(screenGeo, screenMat);
+          screen.position.set(0, 1.4, 0.05);
+          group.add(board);
+          group.add(screen);
+        } else if (item.type === 'beanbag') {
+          const bagGeo = new THREE.SphereGeometry(w / 2, 16, 16);
+          const bagMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.8 });
+          const bag = new THREE.Mesh(bagGeo, bagMat);
+          bag.scale.set(1, 0.5, 1);
+          bag.position.y = 0.25;
+          group.add(bag);
+        } else {
+          const isStanding = (item.type === 'standing_desk');
+          const tableHeight = isStanding ? 1.05 : 0.75;
+          const legHeight = isStanding ? 1.0 : 0.75;
+
+          const topGeo = new THREE.BoxGeometry(w, 0.08, l);
+          const topMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.4 });
+          const top = new THREE.Mesh(topGeo, topMat);
+          top.position.y = tableHeight;
+          group.add(top);
+
+          const legGeo = new THREE.CylinderGeometry(0.03, 0.03, legHeight);
+          const legMat = new THREE.MeshStandardMaterial({ color: 0x64748b });
+          const legX = w / 2 - 0.08;
+          const legZ = l / 2 - 0.08;
+          [[-legX, -legZ], [legX, -legZ], [-legX, legZ], [legX, legZ]].forEach(([lx, lz]) => {
+            const leg = new THREE.Mesh(legGeo, legMat);
+            leg.position.set(lx, legHeight / 2, lz);
+            group.add(leg);
+          });
+        }
+        tempScene.add(group);
+      });
+
+      tempRenderer.render(tempScene, tempCamera);
+      const dataUrl = offCanvas.toDataURL('image/png');
+      tempRenderer.dispose();
+      return dataUrl;
+    }
+
+    function printLayout() {
+      printFullReport();
+    }
+
+    function export3DImage() {
+      if (!renderer3D) return;
+
+      // Ensure frame is rendered
+      renderer3D.render(scene3D, camera3D);
+      const dataUrl = renderer3D.domElement.toDataURL('image/png');
+
+      const link = document.createElement('a');
+      link.download = `3D_Classroom_View_${Date.now()}.png`;
+      link.href = dataUrl;
+      link.click();
+    }
+
+    // --- 3D Scene WebGL Rendering Engine ---
+    let scene3D, camera3D, renderer3D, animationFrameId, resizeObserver3D;
+
+    function open3DModal() {
+      const modal = document.getElementById('modal3D');
+      if (!modal) return;
+      modal.classList.remove('hidden');
+      
+      const loadingEl = document.getElementById('loading3D');
+      if (loadingEl) loadingEl.classList.remove('hidden');
+      
+      requestAnimationFrame(() => {
+        setTimeout(() => {
+          init3DScene();
+          if (loadingEl) loadingEl.classList.add('hidden');
+        }, 150);
+      });
+    }
+
+    function close3DModal() {
+      const modal = document.getElementById('modal3D');
+      if (modal) modal.classList.add('hidden');
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (resizeObserver3D) resizeObserver3D.disconnect();
+    }
+
+    function reset3DCamera(viewType = 'persp') {
+      if (!camera3D) return;
+
+      if (viewType === 'top') {
+        camera3D.position.set(roomWidth / 2, Math.max(roomWidth, roomLength) * 1.4, roomLength / 2 + 0.01);
+      } else {
+        camera3D.position.set(roomWidth / 2, Math.max(roomWidth, roomLength) * 1.1, roomLength * 1.3);
+      }
+      camera3D.lookAt(roomWidth / 2, 0, roomLength / 2);
+    }
+
+    // Generate dynamic procedural wood floor texture
+    function createWoodFloorTexture() {
+      const texCanvas = document.createElement('canvas');
+      texCanvas.width = 512;
+      texCanvas.height = 512;
+      const tCtx = texCanvas.getContext('2d');
+
+      tCtx.fillStyle = '#1e293b';
+      tCtx.fillRect(0, 0, 512, 512);
+
+      tCtx.strokeStyle = '#334155';
+      tCtx.lineWidth = 4;
+      const plankHeight = 32;
+
+      for (let y = 0; y <= 512; y += plankHeight) {
+        tCtx.beginPath();
+        tCtx.moveTo(0, y);
+        tCtx.lineTo(512, y);
+        tCtx.stroke();
+      }
+
+      const texture = new THREE.CanvasTexture(texCanvas);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(roomWidth / 2, roomLength / 2);
+      return texture;
+    }
+
+    function init3DScene() {
+      const container = document.getElementById('canvas3DContainer');
+      if (!container) return;
+
+      const existingCanvas = container.querySelector('canvas');
+      if (existingCanvas) existingCanvas.remove();
+
+      const width = container.clientWidth || 800;
+      const height = container.clientHeight || 500;
+
+      scene3D = new THREE.Scene();
+      scene3D.background = new THREE.Color(0x0b0f19);
+
+      camera3D = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      reset3DCamera('persp');
+
+      renderer3D = new THREE.WebGLRenderer({ antialias: true });
+      renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer3D.setSize(width, height);
+      renderer3D.shadowMap.enabled = true;
+      renderer3D.shadowMap.type = THREE.PCFSoftShadowMap;
+      container.appendChild(renderer3D.domElement);
+
+      // Lighting
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
+      scene3D.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xfff7ed, 0.9);
+      dirLight.position.set(roomWidth * 0.5, 12, roomLength * 0.5);
+      dirLight.castShadow = true;
+      dirLight.shadow.mapSize.width = 1024;
+      dirLight.shadow.mapSize.height = 1024;
+      scene3D.add(dirLight);
+
+      // Floor Plane with Wood Texture
+      const floorGeo = new THREE.PlaneGeometry(roomWidth, roomLength);
+      const floorMat = new THREE.MeshStandardMaterial({
+        map: createWoodFloorTexture(),
+        roughness: 0.5,
+        metalness: 0.1
+      });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.position.set(roomWidth / 2, 0, roomLength / 2);
+      floor.receiveShadow = true;
+      scene3D.add(floor);
+
+      // Grid helper
+      const grid = new THREE.GridHelper(Math.max(roomWidth, roomLength) * 1.4, 20, 0x6366f1, 0x334155);
+      grid.position.set(roomWidth / 2, 0.01, roomLength / 2);
+      scene3D.add(grid);
+
+      // Construct Furniture Meshes
+      furnitureItems.forEach(item => {
+        const typeInfo = furnitureTypes[item.type] || { width: 1, length: 1, color: '#3b82f6' };
+        const group = new THREE.Group();
+        group.position.set(item.x, 0, item.y);
+        group.rotation.y = -(item.rotation || 0) * (Math.PI / 180);
+
+        let meshColor = item.color || typeInfo.color || '#3b82f6';
+        let colorHex = parseInt(meshColor.replace('#', '0x')) || 0x3b82f6;
+
+        const w = typeInfo.width;
+        const l = typeInfo.length;
+
+        if (item.type === 'smart_board') {
+          // Interactive Smart Screen with bezel
+          const boardGeo = new THREE.BoxGeometry(w, 1.3, 0.08);
+          const boardMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
+          const board = new THREE.Mesh(boardGeo, boardMat);
+          board.position.y = 1.4;
+
+          const screenGeo = new THREE.PlaneGeometry(w - 0.2, 1.1);
+          const screenMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+          const screen = new THREE.Mesh(screenGeo, screenMat);
+          screen.position.set(0, 1.4, 0.05);
+
+          group.add(board);
+          group.add(screen);
+        } else if (item.type === 'beanbag') {
+          const bagGeo = new THREE.SphereGeometry(w / 2, 16, 16);
+          const bagMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.8 });
+          const bag = new THREE.Mesh(bagGeo, bagMat);
+          bag.scale.set(1, 0.5, 1);
+          bag.position.y = 0.25;
+          group.add(bag);
+        } else {
+          // Desks, Tables & Chairs
+          const isStanding = (item.type === 'standing_desk');
+          const tableHeight = isStanding ? 1.05 : 0.75;
+          const legHeight = isStanding ? 1.0 : 0.75;
+
+          const topGeo = new THREE.BoxGeometry(w, 0.08, l);
+          const topMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.4 });
+          const top = new THREE.Mesh(topGeo, topMat);
+          top.position.y = tableHeight;
+          top.castShadow = true;
+          group.add(top);
+
+          // Table Legs
+          const legGeo = new THREE.CylinderGeometry(0.03, 0.03, legHeight);
+          const legMat = new THREE.MeshStandardMaterial({ color: 0x64748b });
+          const legX = w / 2 - 0.08;
+          const legZ = l / 2 - 0.08;
+
+          [[-legX, -legZ], [legX, -legZ], [-legX, legZ], [legX, legZ]].forEach(([lx, lz]) => {
+            const leg = new THREE.Mesh(legGeo, legMat);
+            leg.position.set(lx, legHeight / 2, lz);
+            group.add(leg);
+          });
+        }
+
+        scene3D.add(group);
+      });
+
+      // Orbit interaction controls
+      let isDragging3D = false;
+      let prevMousePos = { x: 0, y: 0 };
+      const dom = renderer3D.domElement;
+
+      dom.onmousedown = (e) => {
+        isDragging3D = true;
+        prevMousePos = { x: e.clientX, y: e.clientY };
+      };
+
+      dom.onmousemove = (e) => {
+        if (!isDragging3D) return;
+        const deltaX = e.clientX - prevMousePos.x;
+        const deltaY = e.clientY - prevMousePos.y;
+
+        camera3D.position.x -= deltaX * 0.02;
+        camera3D.position.y = Math.max(1.0, camera3D.position.y + deltaY * 0.02);
+        camera3D.lookAt(roomWidth / 2, 0, roomLength / 2);
+
+        prevMousePos = { x: e.clientX, y: e.clientY };
+      };
+
+      dom.onwheel = (e) => {
+        e.preventDefault();
+        camera3D.position.y = Math.max(2.0, Math.min(25.0, camera3D.position.y + e.deltaY * 0.01));
+        camera3D.lookAt(roomWidth / 2, 0, roomLength / 2);
+      };
+
+      window.onmouseup = () => { isDragging3D = false; };
+
+      function animate3D() {
+        animationFrameId = requestAnimationFrame(animate3D);
+        renderer3D.render(scene3D, camera3D);
+      }
+      animate3D();
+    }
+
+    async function analyzeLayoutWithAI() {
+      const modal = document.getElementById('modalAI');
+      const content = document.getElementById('aiResultContent');
+      modal.classList.remove('hidden');
+
+      const dict = i18n[currentLang] || i18n.en;
+
+      content.innerHTML = `
+        <div class="flex flex-col items-center justify-center py-12 space-y-3 text-teal-400">
+          <i class="fa-solid fa-circle-notch fa-spin text-3xl"></i>
+          <p class="font-medium text-slate-300">${dict.modal_ai_loading}</p>
+        </div>
+      `;
+
+      const summaryList = furnitureItems.map(i => {
+        const typeInfo = furnitureTypes[i.type];
+        const localizedName = typeInfo ? ((typeof typeInfo.name === 'object') ? (typeInfo.name[currentLang] || typeInfo.name.en) : typeInfo.name) : i.type;
+        return `${localizedName} (${i.x.toFixed(1)}m, ${i.y.toFixed(1)}m)`;
+      }).join(', ');
+
+      const langNames = {
+        zh: 'Simplified Chinese (简体中文)',
+        en: 'English',
+        ms: 'Bahasa Melayu'
+      };
+      const targetLangName = langNames[currentLang] || 'Simplified Chinese';
+
+      const systemPrompt = `You are an expert educational spatial consultant specializing in PAK-21 (21st Century Learning). Provide a structured, helpful, concise assessment detailing overall score (/100), key strengths, traffic flow analysis, and 3 actionable PAK-21 pedagogical tips based on the classroom layout provided.
+
+CRITICAL REQUIREMENT: You MUST generate your ENTIRE response in ${targetLangName}. Do NOT output in any other language.`;
+
+      const userQuery = `Classroom Dimensions: ${roomWidth}m x ${roomLength}m. Target Student Capacity: ${targetCapacity} students. Current seats on canvas: ${summaryList || 'None'}. Evaluate layout for collaborative learning, capacity match against target (${targetCapacity} students), teacher sightlines, and mobility in ${targetLangName}.`;
+
+      const apiKey = ""; // Canvas runtime auto-injects key
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+
+      try {
+        const response = await fetch(apiUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: userQuery }] }],
+            systemInstruction: { parts: [{ text: systemPrompt }] }
+          })
+        });
+
+        const data = await response.json();
+        const responseText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+
+        if (responseText) {
+          content.innerHTML = `
+            <div class="prose prose-invert max-w-none text-slate-200 text-sm space-y-3">
+              <div class="p-3 bg-teal-950/40 border border-teal-500/30 rounded-xl flex items-center space-x-3 mb-4">
+                <i class="fa-solid fa-circle-check text-teal-400 text-xl"></i>
+                <div>
+                  <h4 class="font-bold text-teal-200">${dict.modal_ai_success_title}</h4>
+                  <p class="text-xs text-slate-300">${dict.modal_ai_success_sub}</p>
+                </div>
+              </div>
+              <div class="whitespace-pre-line leading-relaxed">${responseText}</div>
+            </div>
+          `;
+        } else {
+          content.innerHTML = `<p class="text-rose-400">${dict.modal_ai_error}</p>`;
+        }
+      } catch (err) {
+        content.innerHTML = `<p class="text-rose-400">${dict.modal_ai_error}: ${err.message}</p>`;
+      }
+    }
+
+    function closeAIModal() {
+      document.getElementById('modalAI').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
