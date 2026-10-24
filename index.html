@@ -1,1692 +1,2402 @@
-<!DOCTYPE html>
-<html lang="zh" class="dark">
+<!doctype html>
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>21st Century Smart Classroom Layout Generator (PAK-21)</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>学校出席与日志系统｜SJK(C) Chung Hua Rantau</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ========== 温馨暖色系变量 ========== */
+:root{
+  --primary: #e07a5f;        /* 暖珊瑚橙 */
+  --primary-hover: #c9684f;
+  --primary-light: #fdf3f0;  /* 极浅的蜜桃背景 */
+  --secondary: #f4a261;      /* 暖橙 */
+  --success: #81b29a;        /* 柔和抹茶绿 */
+  --success-light: #e8f5ef;
+  --danger: #e76f51;         /* 珊瑚红 */
+  --danger-light: #fbeceb;
+  --warning: #f2cc8f;        /* 奶油黄 */
+  --warning-light: #fef8eb;
+  --info: #a37cbb;           /* 香芋紫 */
+  --border: #f0e3df;         /* 暖灰边框 */
+  --bg: #fcf9f8;             /* 奶油白背景 */
+  --ink: #3d405b;            /* 深灰蓝文字 */
+  --muted: #8d8b8a;          /* 暖灰文字 */
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--ink);
+}
+
+/* ========== 通用 ========== */
+.hidden{display:none!important}
+.muted{color:var(--muted);font-size:13px}
+.pill{display:inline-block;padding:4px 10px;border-radius:999px;background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:700}
+.status{padding:12px 14px;border-radius:10px;background:var(--primary-light);margin-bottom:14px;white-space:pre-wrap;font-size:13px;border:1px solid var(--border)}
+.status.error{background:var(--danger-light);color:var(--danger);border-color:#f5d0c7}
+.status.ok{background:var(--success-light);color:var(--success);border-color:#cde6dc}
+input,select,button{font:inherit}
+input,select{padding:10px 12px;border:1px solid #e0d4d0;border-radius:10px;width:100%;background:#fff;min-height:42px;transition:all .2s}
+input:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-light)}
+button{border:0;border-radius:10px;padding:10px 16px;background:var(--primary);color:white;cursor:pointer;font-weight:600;transition:all .2s}
+button:hover{background:var(--primary-hover);transform:translateY(-1px)}
+button:active{transform:translateY(1px)}
+button.secondary{background:#f0e8e5;color:var(--ink)}
+button.secondary:hover{background:#e6ddd9}
+button.danger{background:var(--danger)}
+button.danger:hover{background:#d15f43}
+button:disabled{opacity:.55;cursor:not-allowed;transform:none}
+small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px}
+
+/* ========== 顶部导航 ========== */
+.top-nav{
+  background: linear-gradient(135deg, #f6d8c9 0%, #f2cc8f 100%);
+  color: var(--ink);
+  padding:14px 24px;
+  display:flex;justify-content:space-between;align-items:center;
+  box-shadow:0 4px 15px rgba(224, 122, 95, 0.1);
+  position:sticky;top:0;z-index:1000;
+  flex-wrap:wrap;gap:12px;
+  border-bottom: 1px solid rgba(255,255,255,0.5);
+}
+.top-nav h1{font-size:18px;margin:0;display:flex;align-items:center;gap:10px;color:#3d405b}
+.top-nav small{opacity:.8;display:block;margin-top:4px;font-size:12px;color:#6b6e8b}
+.lang-switcher select{padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.6);font-weight:bold;background:rgba(255,255,255,0.7);color:var(--ink);min-height:auto;width:auto;backdrop-filter:blur(4px)}
+.lang-switcher select:focus{box-shadow:0 0 0 3px rgba(255,255,255,0.4)}
+#schoolLogo{width:40px;height:40px;object-fit:contain;border-radius:8px;background:#fff;padding:2px;box-shadow:0 2px 6px rgba(0,0,0,0.05)}
+#defaultIcon{font-size:24px;line-height:1}
+
+/* ========== 登录面板 ========== */
+.login-wrap{max-width:420px;margin:80px auto;padding:0 20px}
+.login-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:32px;box-shadow:0 10px 30px rgba(224, 122, 95, 0.08)}
+.login-card h2{font-size:22px;margin:0 0 10px;color:var(--primary)}
+.login-card .desc{font-size:13px;color:var(--muted);margin:0 0 24px;line-height:1.5}
+.login-card .field{margin-bottom:16px}
+.login-card label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px}
+.login-card button[type=submit]{width:100%;padding:14px;font-size:16px;margin-top:10px}
+
+/* ========== 桌面端布局 ========== */
+@media(min-width:768px){
+  .mobile-only{display:none!important}
+  .desktop-container{
+    max-width:1500px;margin:0 auto;padding:24px;
+    display:flex;gap:24px;align-items:flex-start;
+  }
+  .attendance-panel{
+    flex:1;min-width:360px;background:#fff;padding:24px;border-radius:16px;
+    box-shadow:0 4px 20px rgba(224, 122, 95, 0.06);display:flex;flex-direction:column;
+  }
+  .log-panel{
+    flex:1.8;min-width:700px;background:#fff;padding:24px;border-radius:16px;
+    box-shadow:0 4px 20px rgba(224, 122, 95, 0.06);overflow-x:auto;
+  }
+  .form-group{margin-bottom:16px}
+  .form-group label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px}
+  .info-display{background:var(--primary-light);padding:12px;border-radius:10px;margin-bottom:16px;font-size:13px;display:flex;justify-content:space-between;border:1px solid var(--border)}
   
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <!-- Three.js Library for 3D View -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-  <!-- Google Fonts -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  /* 整齐划一的 2x2 网格布局 */
+  .batch-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+  .batch-buttons button{
+    padding:10px;
+    font-size:14px;
+    height:42px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border-radius:10px;
+  }
 
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Inter', 'sans-serif'],
-          },
-          colors: {
-            brand: {
-              50: '#f0f9ff',
-              500: '#06b6d4',
-              600: '#0284c7',
-              700: '#0369a1',
-              900: '#0c4a6e',
-            }
-          }
-        }
-      }
-    }
-  </script>
-  <style>
-    body {
-      font-family: 'Inter', sans-serif;
-      user-select: none;
-    }
-    .custom-scrollbar::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-      background: rgba(15, 23, 42, 0.6);
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-      background: rgba(51, 65, 85, 0.8);
-      border-radius: 4px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-      background: rgba(71, 85, 105, 1);
-    }
-    canvas {
-      touch-action: none;
-    }
+  .btn-all-present{background:var(--success)}
+  .btn-all-present:hover{background:#6fa088}
+  .btn-all-absent{background:var(--danger)}
+  .btn-all-absent:hover{background:#d15f43}
+  .btn-manage-school{background:var(--info)}
+  .btn-manage-school:hover{background:#916fa8}
+  .btn-manage-student{background:#e59866}
+  .btn-manage-student:hover{background:#d68957}
+  .btn-backup{background:var(--secondary)}
+  .btn-backup:hover{background:#e09252}
+  .btn-restore{background:#a78b7a}
+  .btn-restore:hover{background:#937968}
+  
+  /* 修正：桌面端学生卡片按自然顺序（从左到右）排列 */
+  .student-list{
+    display:grid;
+    grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
+    gap:10px;
+    margin-bottom:20px;max-height:480px;overflow-y:auto;padding-right:5px;
+  }
+  .student-card{
+    border:2px solid var(--border);border-radius:12px;padding:10px;cursor:pointer;
+    background:#fff;font-size:13px;position:relative;text-align:left;transition:all .2s;
+  }
+  .student-card:hover{border-color:#e0d4d0;transform:translateY(-1px)}
+  .student-card.present{background:var(--success-light);border-color:var(--success)}
+  .student-card.absent{background:var(--danger-light);border-color:var(--danger);text-decoration:line-through;color:var(--danger)}
+  .student-card .no{position:absolute;top:6px;right:8px;font-size:11px;color:var(--muted);font-weight:600}
+  .student-card .name{font-weight:bold;display:block;margin-top:4px;padding-right:25px}
+  .student-card .gender{font-size:11px;color:var(--muted);display:block;margin-top:2px}
+  .btn-save{width:100%;padding:16px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:16px;cursor:pointer;font-weight:bold;margin-top:auto;box-shadow:0 4px 10px rgba(224, 122, 95, 0.2)}
 
-    @media print {
-      body * {
-        visibility: hidden;
-      }
-      #printReportArea, #printReportArea * {
-        visibility: visible;
-      }
-      #printReportArea {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-        color: #000 !important;
-        background: #fff !important;
-        display: block !important;
-      }
-      .page-break {
-        page-break-before: always;
-      }
-    }
-  </style>
+  /* 日志表格 */
+  .log-header{text-align:center;font-size:20px;font-weight:bold;margin-bottom:16px;letter-spacing:1px;color:var(--primary)}
+  .info-row{display:flex;border:1px solid var(--border);border-bottom:none;border-radius:10px 10px 0 0;overflow:hidden;background:var(--primary-light)}
+  .info-row>div{flex:1;padding:8px;text-align:center;border-right:1px solid var(--border);font-size:13px;font-weight:500}
+  .info-row>div:last-child{border-right:none}
+  table.dt-table{width:100%;border-collapse:collapse;font-size:13px;text-align:center;border:1px solid var(--border);border-radius:0 0 10px 10px;overflow:hidden}
+  .dt-table th,.dt-table td{border:1px solid var(--border);padding:8px 4px}
+  .dt-table th{background:#fcf9f8;font-weight:600;color:var(--ink)}
+  .global-stats{background:var(--warning-light);border:2px solid var(--warning);padding:20px;border-radius:12px;display:flex;justify-content:space-around;flex-wrap:wrap;margin-top:20px;font-size:14px;box-shadow:0 4px 15px rgba(242, 204, 143, 0.15)}
+  .global-stats strong{display:inline-block;margin-top:6px}
+  .absent-list-box{margin-top:24px;border:1px solid var(--border);border-radius:12px;padding:16px;background:#fff}
+  .absent-table{width:100%;border-collapse:collapse;font-size:13px}
+  .absent-table th,.absent-table td{border:1px solid var(--border);padding:8px;text-align:center}
+  .absent-table th{background:var(--danger-light);color:var(--danger);font-weight:600}
+}
+
+/* ========== 移动端布局 ========== */
+@media(max-width:767px){
+  .desktop-only{display:none!important}
+  .page{padding:16px;padding-bottom:90px}
+  .info-card{background:#fff;border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:0 4px 15px rgba(224, 122, 95, 0.05)}
+  .info-card input[type=date]{width:100%;padding:12px;font-size:16px;border:1px solid var(--border);border-radius:10px;background:var(--primary-light);color:var(--ink)}
+  .class-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:12px}
+  .class-btn{background:#fff;border:2px solid var(--border);border-radius:12px;padding:16px 6px;text-align:center;font-size:16px;font-weight:bold;color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,0.02);cursor:pointer;transition:all .2s}
+  .class-btn:active{background:var(--primary-light);transform:scale(.98);border-color:var(--primary)}
+  .class-btn .count{display:block;font-size:12px;color:var(--muted);font-weight:normal;margin-top:6px}
+  .btn-log{width:100%;padding:16px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:bold;margin-top:20px;box-shadow:0 4px 12px rgba(224, 122, 95, 0.2)}
+  .attendance-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;background:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.03)}
+  .back-btn{background:none;border:none;font-size:15px;color:var(--primary);font-weight:bold;padding:0;cursor:pointer}
+  .student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:12px;margin-bottom:20px}
+  .student-card{background:var(--success-light);border:2px solid var(--success);border-radius:12px;padding:14px 6px;text-align:center;position:relative;cursor:pointer;transition:all .2s}
+  .student-card.absent{background:var(--danger-light);border-color:var(--danger);color:var(--danger);text-decoration:line-through}
+  .student-card .name{font-weight:bold;font-size:14px;display:block}
+  .student-card .no{font-size:11px;color:var(--muted);display:block;margin-top:2px}
+  .bottom-action-bar{position:fixed;bottom:0;left:0;width:100%;background:#fff;padding:12px 16px;box-shadow:0 -4px 20px rgba(0,0,0,0.05);display:flex;gap:12px;z-index:200}
+  .btn-save-m{flex:2;background:var(--primary);color:white;border:none;padding:14px;border-radius:12px;font-size:16px;font-weight:bold;cursor:pointer}
+  .btn-batch-m{flex:1;background:var(--secondary);color:white;border:none;padding:14px;border-radius:12px;font-size:13px;font-weight:bold;cursor:pointer}
+  .log-card{background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 4px 15px rgba(0,0,0,0.03);border-left:6px solid var(--primary)}
+  .log-card-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px}
+  .log-card-title{font-size:18px;font-weight:bold;color:var(--primary)}
+  .log-card-rate{font-size:14px;font-weight:bold;color:var(--success);background:var(--success-light);padding:6px 10px;border-radius:6px}
+  .log-card-body{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center}
+  .log-data-group{background:#fcf9f8;padding:10px;border-radius:10px}
+  .log-data-group .title{font-size:12px;color:var(--muted);margin-bottom:6px}
+  .log-data-group .value{font-size:16px;font-weight:bold}
+  .log-data-group .value span{font-size:11px;font-weight:normal;color:var(--muted)}
+  .log-card-notes{margin-top:12px;font-size:13px;color:var(--danger);background:var(--danger-light);padding:10px;border-radius:8px}
+  .global-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px;margin-top:20px;background:var(--warning-light);border:2px solid var(--warning);border-radius:16px}
+  .global-stats>div{text-align:center}
+  .absent-list-box{margin-top:20px;border:1px solid var(--border);border-radius:16px;padding:16px;background:#fff}
+  .absent-table{width:100%;border-collapse:collapse;font-size:13px}
+  .absent-table th,.absent-table td{border:1px solid var(--border);padding:8px;text-align:center}
+  .absent-table th{background:var(--danger-light);color:var(--danger);font-weight:600}
+}
+
+/* ========== 弹窗 ========== */
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(61, 64, 91, 0.4);backdrop-filter:blur(2px);z-index:2000;justify-content:center;align-items:center;padding:16px}
+.modal-content{background:#fff;padding:24px;border-radius:16px;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 40px rgba(0,0,0,0.1)}
+.modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:16px}
+.modal-header h3{margin:0;font-size:18px;color:var(--primary)}
+.close-btn{background:none;border:none;font-size:28px;cursor:pointer;color:var(--muted);padding:0 6px;line-height:1;transition:color .2s}
+.close-btn:hover{color:var(--danger)}
+.add-form{display:flex;gap:10px;margin-bottom:16px;background:#fcf9f8;padding:12px;border-radius:10px;flex-wrap:wrap}
+.add-form input,.add-form select{padding:10px;border:1px solid var(--border);border-radius:8px;flex:1;min-width:100px;min-height:auto}
+.btn-action{flex:1;text-align:center;padding:12px;border-radius:10px;font-size:14px;font-weight:bold;color:white;cursor:pointer;border:none;display:flex;justify-content:center;align-items:center;transition:all .2s}
+.btn-success{background:var(--success)}
+.btn-success:hover{background:#6fa088}
+.btn-danger{background:var(--danger)}
+.btn-danger:hover{background:#d15f43}
+.btn-info{background:var(--info)}
+.btn-info:hover{background:#916fa8}
+.btn-warning{background:var(--warning);color:var(--ink)}
+.btn-warning:hover{background:#e5bc7a}
+.btn-teal{background:#81b29a}
+.btn-brown{background:#a78b7a}
+.btn-outline{background:#fff;color:var(--ink);border:1px solid var(--border)}
+.btn-outline:hover{background:#fcf9f8}
+
+/* ========== 打印 ========== */
+@media print{
+  @page{size:portrait;margin:10mm}
+  body{background:white!important;margin:0;padding:0}
+  .top-nav,.desktop-container,.mobile-only,.modal-overlay{display:none!important}
+  #printContainer{display:block!important;width:100%!important;margin:0!important;padding:0!important}
+  
+  /* 打印头部排版 */
+  .print-header-wrap{
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    margin-bottom:16px;text-align:center;
+  }
+  .print-header-logo{max-height:60px;max-width:120px;object-fit:contain;margin-bottom:8px;}
+  .print-header-school{font-size:20px;font-weight:bold;letter-spacing:1px;margin-bottom:4px;}
+  .print-header-title{font-size:16px;font-weight:bold;margin-bottom:6px;}
+  
+  .print-info-row{display:flex!important;flex-direction:row!important;border:1px solid #000!important;margin-bottom:10px;border-radius:4px;overflow:hidden}
+  .print-info-row>div{flex:1;padding:6px 2px;text-align:center;border-right:1px solid #000!important;font-size:12px}
+  .print-info-row>div:last-child{border-right:none!important}
+  .print-table{width:100%;margin-bottom:10px;border-collapse:collapse}
+  .print-table th,.print-table td{padding:5px 2px;border:1px solid #000!important;text-align:center}
+  .print-table th{background:#f5f5f5!important}
+  .print-stats{display:flex!important;border:1px solid #000!important;margin-bottom:10px;page-break-inside:avoid;justify-content:space-between;font-size:12px;padding:10px}
+  .print-absent{display:block!important;page-break-inside:avoid;border:1px solid #000!important;padding:10px}
+  .print-absent th,.print-absent td{border:1px solid #000!important;font-size:12px;padding:5px;text-align:center}
+  body.print-desktop #desktopPrintView{display:block!important}
+  body.print-desktop #mobilePrintView{display:none!important}
+  body.print-desktop .print-table{font-size:11px}
+  body.print-mobile #desktopPrintView{display:none!important}
+  body.print-mobile #mobilePrintView{display:block!important}
+  body.print-mobile .print-table{font-size:13px}
+  body.print-mobile .print-table th,body.print-mobile .print-table td{padding:6px 4px}
+  body.print-mobile .lp-merge{font-size:11px;color:#555}
+}
+</style>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col overflow-x-hidden">
+<body>
 
-  <header class="bg-slate-900 border-b border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-30 shadow-lg">
-    <div class="flex items-center space-x-3">
-      <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-teal-500 to-emerald-400 p-0.5 flex items-center justify-center shadow-md">
-        <div class="w-full h-full bg-slate-900 rounded-[10px] flex items-center justify-center">
-          <i class="fa-solid fa-shapes text-indigo-400 text-lg"></i>
+<!-- ========== 顶部导航 ========== -->
+<div class="top-nav">
+  <div>
+    <h1 id="navTitle">
+      <img id="schoolLogo" src="" alt="校徽" style="display:none">
+      <span id="defaultIcon">🏫</span>
+      <span id="schoolNameText">学校出席与日志系统</span>
+    </h1>
+    <small id="navSub">SJK(C) Chung Hua Rantau · Supabase Cloud</small>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+    <span id="userBadge" class="pill hidden" style="background:rgba(255,255,255,.4);color:var(--ink)"></span>
+    <button id="logoutBtn" class="secondary hidden" onclick="signOut()" style="min-height:auto;padding:8px 16px;font-size:13px;background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.8)">登出</button>
+    <div class="lang-switcher">
+      <select id="langSelect" onchange="changeLanguage()">
+        <option value="zh">中文</option>
+        <option value="en">English</option>
+        <option value="ms">Bahasa Melayu</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 登录面板 ========== -->
+<div id="loginPanel" class="login-wrap">
+  <div id="setupNotice" class="status error hidden"></div>
+  <div class="login-card">
+    <h2 data-i18n="login_title">账号登录</h2>
+    <p class="desc" data-i18n="login_desc">请使用管理员或教师账号登录。没有获分配班级的教师不会看到任何班级资料。</p>
+    <div id="loginStatus" class="status hidden"></div>
+    <form id="loginForm">
+      <div class="field">
+        <label for="email" data-i18n="login_email">邮箱 Email</label>
+        <input id="email" type="email" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="password" data-i18n="login_password">密码 Password</label>
+        <input id="password" type="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit" data-i18n="login_btn">登录 / Log in</button>
+    </form>
+    <small class="note" data-i18n="login_note">账号由系统管理员预先建立；本页面不开放自行注册。若忘记密码，请联系管理员重设。</small>
+  </div>
+</div>
+
+<!-- ========== 应用主界面 ========== -->
+<div id="appPanel" class="hidden">
+  <div id="appStatus" class="status hidden" style="max-width:1200px;margin:16px auto"></div>
+
+  <!-- 桌面端 -->
+  <div class="desktop-only desktop-container">
+    <!-- 左侧：点名控制台 -->
+    <div class="attendance-panel">
+      <h3 style="margin-top:0;font-size:18px;color:var(--primary);display:flex;align-items:center;gap:8px" data-i18n="console_title">📋 点名控制台</h3>
+
+      <div class="form-group">
+        <label data-i18n="date_label">点名日期 Tarikh</label>
+        <input type="date" id="dt_dateInput" onchange="syncDate('dt')">
+      </div>
+      <div class="info-display">
+        <span><span data-i18n="sem_label">学期</span>: <strong class="dispSem">-</strong></span>
+        <span><span data-i18n="week_label">周次</span>: <strong class="dispWeek">-</strong></span>
+        <span><span data-i18n="day_label">星期</span>: <strong class="dispDay">-</strong></span>
+      </div>
+
+      <div class="form-group">
+        <label data-i18n="select_class_title">选择班级 Kelas</label>
+        <select id="dt_classSelect" onchange="changeClass('dt')"></select>
+      </div>
+
+      <!-- 整齐划一的 2x2 网格按钮 -->
+      <div class="batch-buttons">
+        <button class="btn-all-present" onclick="batchSet(true)" data-i18n="btn_all_present">✅ 全部出席</button>
+        <button class="btn-all-absent" onclick="batchSet(false)" data-i18n="btn_all_absent">❌ 全部缺席</button>
+      </div>
+      <div class="batch-buttons" id="adminBtns" style="display:none">
+        <button class="btn-manage-school" onclick="openManageModal('school')" data-i18n="btn_manage_school">🏫 学校与教师</button>
+        <button class="btn-manage-student" onclick="openManageModal('student')" data-i18n="btn_manage_student">👨‍🎓 学生管理</button>
+      </div>
+      <div class="batch-buttons" id="adminBtns2" style="display:none">
+        <button class="btn-action btn-backup" onclick="backupData()" data-i18n="btn_backup">💾 备份数据</button>
+        <button class="btn-action btn-restore" onclick="document.getElementById('globalRestoreInput').click()" data-i18n="btn_restore">📂 恢复数据</button>
+      </div>
+
+      <div class="student-list" id="dt_studentList"></div>
+
+      <button class="btn-save" onclick="saveAttendance()" data-i18n="btn_save">💾 保存点名数据</button>
+    </div>
+
+    <!-- 右侧：日志面板 -->
+    <div class="log-panel">
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-bottom:12px">
+        <button onclick="printReport('desktop')" style="padding:8px 16px;background:var(--info);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:bold;font-size:13px;transition:all .2s" onmouseover="this.style.background='#916fa8'" onmouseout="this.style.background='var(--info)'" data-i18n="btn_print">🖨️ 打印报告</button>
+      </div>
+
+      <div id="desktopReportView">
+        <div class="log-header" data-i18n="log_header">学校日志</div>
+        <div class="info-row">
+          <div><span data-i18n="sem_label">学期</span> <strong class="dispSem">-</strong></div>
+          <div><span data-i18n="week_label">周次</span> <strong class="dispWeek">-</strong></div>
+          <div><span data-i18n="day_label">星期</span> <strong class="dispDay">-</strong></div>
+          <div><span data-i18n="date_label">日期</span> <strong class="dispDate">-</strong></div>
+        </div>
+        <table class="dt-table">
+          <thead>
+            <tr>
+              <th rowspan="2" data-i18n="th_class">班级</th>
+              <th colspan="2" data-i18n="th_total">在籍</th>
+              <th colspan="2" data-i18n="th_present">出席</th>
+              <th colspan="2" data-i18n="th_absent">缺席</th>
+              <th rowspan="2" data-i18n="th_notes">备注</th>
+              <th rowspan="2" data-i18n="th_rate">出席率</th>
+            </tr>
+            <tr><th>L</th><th>P</th><th>L</th><th>P</th><th>L</th><th>P</th></tr>
+          </thead>
+          <tbody id="dt_logTableBody"></tbody>
+        </table>
+        <div class="global-stats">
+          <div style="text-align:center"><span data-i18n="stat_total">今日全校总人数</span><br><strong id="dt_globalTotal" style="font-size:22px;color:var(--primary)">-</strong></div>
+          <div style="text-align:center"><span data-i18n="stat_present">今日全级出席</span><br><strong id="dt_globalPresent" style="font-size:22px;color:var(--success)">-</strong></div>
+          <div style="text-align:center"><span data-i18n="stat_absent">今日全级缺席</span><br><strong id="dt_globalAbsent" style="font-size:22px;color:var(--danger)">-</strong></div>
+          <div style="text-align:center"><span data-i18n="stat_rate">全级出席率</span><br><strong id="dt_globalPercent" style="font-size:22px;color:var(--info)">-</strong></div>
+        </div>
+        <div class="absent-list-box">
+          <h4 style="margin:0 0 12px 0;color:var(--danger);font-size:15px" data-i18n="absent_title">📝 缺席学生名单</h4>
+          <table class="absent-table">
+            <thead><tr><th data-i18n="th_absent_class">班级</th><th data-i18n="th_absent_no">编号</th><th data-i18n="th_absent_name">姓名</th><th data-i18n="th_absent_gender">性别</th></tr></thead>
+            <tbody id="dt_absentListBody"></tbody>
+          </table>
         </div>
       </div>
-      <div>
-        <h1 class="text-base font-bold text-white tracking-tight flex items-center gap-2">
-          <span>Smart Classroom Layout Generator</span>
-          <span class="px-2 py-0.5 text-[10px] bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 rounded-full font-semibold">PAK-21</span>
-        </h1>
-        <p class="text-xs text-slate-400" data-i18n="app_subtitle">21世纪智能教室空间布局与实景生成器</p>
+    </div>
+  </div>
+
+  <!-- 移动端 -->
+  <div class="mobile-only">
+    <!-- 页面 1：主页 -->
+    <div class="page" id="m_pageHome">
+      <div class="info-card">
+        <label data-i18n="date_label" style="display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:8px">选择日期 (Date)</label>
+        <input type="date" id="m_dateInput" onchange="syncDate('m')">
+        <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:13px;background:var(--primary-light);padding:12px;border-radius:10px;border:1px solid var(--border)">
+          <span><span data-i18n="sem_label">学期</span>: <strong class="dispSem">-</strong></span>
+          <span><span data-i18n="week_label">周次</span>: <strong class="dispWeek">-</strong></span>
+          <span><span data-i18n="day_label">星期</span>: <strong class="dispDay">-</strong></span>
+        </div>
+      </div>
+
+      <div style="font-size:16px;font-weight:bold;margin:16px 0;color:var(--primary)" data-i18n="select_class_title">请选择班级进行点名：</div>
+      <div class="class-grid" id="m_classGrid"></div>
+
+      <button class="btn-log" onclick="goToPage('m_pageLog')" data-i18n="btn_view_log">📊 查看学校日志</button>
+
+      <div style="display:flex;gap:10px;margin-top:24px" id="mobileAdminBtns" style="display:none">
+        <button onclick="backupData()" style="flex:1;padding:12px;border:1px solid var(--border);background:#fff;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,0.02)" data-i18n="btn_backup">💾 备份</button>
+        <button onclick="document.getElementById('globalRestoreInput').click()" style="flex:1;padding:12px;border:1px solid var(--border);background:#fff;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,0.02)" data-i18n="btn_restore">📂 恢复</button>
+        <button onclick="openManageModal('school')" style="flex:1;padding:12px;border:1px solid var(--border);background:#fff;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,0.02)" data-i18n="btn_manage_school">🏫 学校</button>
+        <button onclick="openManageModal('student')" style="flex:1;padding:12px;border:1px solid var(--border);background:#fff;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,0.02)" data-i18n="btn_manage_student">👨‍🎓 学生</button>
       </div>
     </div>
 
-    <!-- Quick Room Dimensions & Language Control -->
-    <div class="flex items-center space-x-3 flex-wrap gap-y-2">
-      <div class="flex items-center space-x-2 bg-slate-800/90 px-3 py-1.5 rounded-lg border border-slate-700/70 text-xs">
-        <i class="fa-solid fa-ruler-combined text-indigo-400"></i>
-        <span class="text-slate-400 font-medium" data-i18n="label_room_size">教室尺寸:</span>
-        <input type="number" id="inputRoomW" value="10" min="4" max="25" step="0.5" onchange="updateRoomDimensions()" class="w-12 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-center text-white focus:outline-none focus:border-indigo-500 font-semibold">
-        <span class="text-slate-400">m &times;</span>
-        <input type="number" id="inputRoomL" value="8" min="4" max="25" step="0.5" onchange="updateRoomDimensions()" class="w-12 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-center text-white focus:outline-none focus:border-indigo-500 font-semibold">
-        <span class="text-slate-400">m</span>
+    <!-- 页面 2：点名页 -->
+    <div class="page hidden" id="m_pageAttendance">
+      <div class="attendance-header">
+        <button class="back-btn" onclick="goToPage('m_pageHome')">❮ <span data-i18n="btn_back">返回</span></button>
+        <h3 style="margin:0;font-size:18px;color:var(--primary)" id="m_currentClassName">-</h3>
+        <div style="width:50px"></div>
       </div>
-
-      <div class="flex items-center space-x-2 bg-slate-800/90 px-3 py-1.5 rounded-lg border border-slate-700/70 text-xs">
-        <i class="fa-solid fa-user-group text-teal-400"></i>
-        <span class="text-slate-400 font-medium" data-i18n="label_target_students">学生人数:</span>
-        <input type="number" id="inputTargetCapacity" value="30" min="1" max="100" step="1" onchange="updateTargetCapacity()" class="w-12 bg-slate-900 border border-slate-700 rounded px-1.5 py-0.5 text-center text-white focus:outline-none focus:border-teal-500 font-semibold">
-        <span class="text-slate-400" data-i18n="label_people_unit">人</span>
-      </div>
-
-      <!-- Language Selector -->
-      <div class="flex items-center space-x-1 bg-slate-800/90 p-1 rounded-lg border border-slate-700/70 text-xs">
-        <button onclick="setLanguage('zh')" id="lang-zh" class="px-2 py-1 rounded font-semibold transition bg-indigo-600 text-white">中文</button>
-        <button onclick="setLanguage('en')" id="lang-en" class="px-2 py-1 rounded font-semibold transition text-slate-400 hover:text-white">EN</button>
-        <button onclick="setLanguage('ms')" id="lang-ms" class="px-2 py-1 rounded font-semibold transition text-slate-400 hover:text-white">BM</button>
+      <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:16px;background:var(--primary-light);padding:10px;border-radius:10px" data-i18n="attendance_tip">默认全员出席。点击学生名字将其标记为缺席 (变红)。</div>
+      <div class="student-grid" id="m_studentList"></div>
+      <div class="bottom-action-bar">
+        <button class="btn-batch-m" onclick="batchSet(true)" data-i18n="btn_all_present">全部出席</button>
+        <button class="btn-batch-m" onclick="batchSet(false)" style="background:var(--danger)" data-i18n="btn_all_absent">全部缺席</button>
+        <button class="btn-save-m" onclick="saveAttendance()" data-i18n="btn_save">💾 保存</button>
       </div>
     </div>
-  </header>
 
-  <div class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
-    
-    <!-- Left Sidebar: Furniture Palette & Layout Presets -->
-    <aside class="w-full lg:w-80 bg-slate-900/95 border-r border-slate-800 flex flex-col overflow-y-auto custom-scrollbar p-4 space-y-5">
-      
-      <!-- Layout Presets Section -->
-      <div>
-        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center justify-between">
-          <span data-i18n="heading_presets"><i class="fa-solid fa-layer-group text-indigo-400 mr-1.5"></i> Preset Susun Atur PAK-21</span>
-        </h3>
-        <div class="grid grid-cols-2 gap-2">
-          <button onclick="loadPreset('groups')" class="p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/80 rounded-xl text-left transition group">
-            <div class="text-xs font-semibold text-slate-200 group-hover:text-indigo-300" data-i18n="preset_group">Kumpulan 4-6</div>
-            <div class="text-[10px] text-slate-400" data-i18n="preset_group_sub">Kolaborasi Abad 21</div>
-          </button>
-          
-          <button onclick="loadPreset('ushape')" class="p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/80 rounded-xl text-left transition group">
-            <div class="text-xs font-semibold text-slate-200 group-hover:text-teal-300" data-i18n="preset_ushape">Bentuk U / Tapak Kuda</div>
-            <div class="text-[10px] text-slate-400" data-i18n="preset_ushape_sub">Pembentangan & Diskusi</div>
-          </button>
-
-          <button onclick="loadPreset('stations')" class="p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/80 rounded-xl text-left transition group">
-            <div class="text-xs font-semibold text-slate-200 group-hover:text-rose-300" data-i18n="preset_stations">Rotasi Stesen</div>
-            <div class="text-[10px] text-slate-400" data-i18n="preset_stations_sub">ICT, Diskusi & Gua</div>
-          </button>
-
-          <button onclick="loadPreset('fishbowl')" class="p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/80 rounded-xl text-left transition group">
-            <div class="text-xs font-semibold text-slate-200 group-hover:text-cyan-300" data-i18n="preset_fishbowl">Fishbowl Debate</div>
-            <div class="text-[10px] text-slate-400" data-i18n="preset_fishbowl_sub">Bulatan Perbahasan</div>
-          </button>
-
-          <button onclick="loadPreset('herringbone')" class="p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/80 rounded-xl text-left transition group">
-            <div class="text-xs font-semibold text-slate-200 group-hover:text-amber-300" data-i18n="preset_herringbone">Tulang Ikan</div>
-            <div class="text-[10px] text-slate-400" data-i18n="preset_herringbone_sub">Barisan Bersudut 45&deg;</div>
-          </button>
-
-          <button onclick="loadPreset('bistro')" class="p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/80 rounded-xl text-left transition group">
-            <div class="text-xs font-semibold text-slate-200 group-hover:text-fuchsia-300" data-i18n="preset_bistro">Gaya Kafe / Studio</div>
-            <div class="text-[10px] text-slate-400" data-i18n="preset_bistro_sub">Pembelajaran Fleksibel</div>
-          </button>
-
-          <button onclick="loadPreset('thornburg')" class="p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/80 rounded-xl text-left transition group col-span-2">
-            <div class="text-xs font-semibold text-slate-200 group-hover:text-emerald-300" data-i18n="preset_thornburg">Zon 3-Mod (Thornburg)</div>
-            <div class="text-[10px] text-slate-400" data-i18n="preset_thornburg_sub">Unggun Api, Gua & Kolam</div>
-          </button>
-        </div>
+    <!-- 页面 3：日志页 -->
+    <div class="page hidden" id="m_pageLog">
+      <div class="attendance-header">
+        <button class="back-btn" onclick="goToPage('m_pageHome')">❮ <span data-i18n="btn_back">返回</span></button>
+        <h3 style="margin:0;font-size:18px;color:var(--primary)" data-i18n="log_title">📊 学校日志</h3>
+        <button class="back-btn" onclick="printReport('mobile')" style="color:var(--info);font-weight:600" data-i18n="btn_print">🖨️</button>
       </div>
 
-      <hr class="border-slate-800">
-
-      <!-- Furniture Palette Section -->
-      <div>
-        <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2.5 flex items-center justify-between">
-          <span data-i18n="heading_palette"><i class="fa-solid fa-couch text-teal-400 mr-1.5"></i> Perabot & Kelengkapan</span>
-        </h3>
-        <div class="grid grid-cols-2 gap-2" id="furniturePalette">
-          <!-- Populated dynamically via JS -->
-        </div>
+      <div class="info-card" style="padding:12px;margin-bottom:12px;text-align:center;font-size:13px;background:var(--primary-light)">
+        <span data-i18n="sem_label">学期</span>: <strong class="dispSem">-</strong> |
+        <span data-i18n="week_label">周次</span>: <strong class="dispWeek">-</strong> |
+        <span data-i18n="date_label">日期</span>: <strong class="dispDate">-</strong>
       </div>
 
-      <hr class="border-slate-800">
+      <div id="m_logCardContainer"></div>
 
-      <!-- Item Properties Inspector (Active Selection) -->
-      <div id="inspectorPanel" class="bg-slate-950/60 border border-slate-800 rounded-xl p-3 space-y-3">
-        <div class="text-xs font-bold text-indigo-400 flex items-center justify-between">
-          <span data-i18n="heading_inspector"><i class="fa-solid fa-sliders mr-1"></i> Tetapan Perabot Selected</span>
-          <span id="selectedItemName" class="text-slate-300 font-normal text-[11px] truncate max-w-[120px]">Tiada Dipilih</span>
-        </div>
-        
-        <div id="inspectorControls" class="space-y-2 opacity-50 pointer-events-none">
-          <div>
-            <label class="text-[10px] text-slate-400 block mb-1" data-i18n="label_rotation">Putaran (Degree):</label>
-            <div class="flex items-center space-x-2">
-              <input type="range" id="inputRotation" min="0" max="345" step="15" value="0" oninput="updateSelectedProperty('rotation', this.value)" class="flex-1 accent-indigo-500">
-              <span id="txtRotationVal" class="text-xs text-slate-300 font-mono w-8 text-right">0&deg;</span>
-            </div>
-          </div>
-
-          <div>
-            <label class="text-[10px] text-slate-400 block mb-1" data-i18n="label_color">Warna Item:</label>
-            <div class="flex items-center space-x-1.5" id="colorPickerContainer">
-              <!-- Colors injected by JS -->
-            </div>
-          </div>
-
-          <div class="pt-2 flex items-center justify-between gap-2">
-            <button onclick="rotateSelected(45)" class="flex-1 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs transition border border-slate-700">
-              <i class="fa-solid fa-rotate-right mr-1"></i> +45&deg;
-            </button>
-            <button onclick="deleteSelected()" class="flex-1 py-1 bg-rose-950/80 hover:bg-rose-900 text-rose-300 rounded text-xs transition border border-rose-800/80">
-              <i class="fa-solid fa-trash mr-1"></i> Padam
-            </button>
-          </div>
-        </div>
+      <div class="global-stats">
+        <div><span style="font-size:13px;color:var(--ink);font-weight:600" data-i18n="stat_total">全校总人数</span><br><strong id="m_globalTotal" style="font-size:20px;color:var(--primary)">-</strong></div>
+        <div><span style="font-size:13px;color:var(--ink);font-weight:600" data-i18n="stat_present">全级出席</span><br><strong id="m_globalPresent" style="font-size:20px;color:var(--success)">-</strong></div>
+        <div><span style="font-size:13px;color:var(--ink);font-weight:600" data-i18n="stat_absent">全级缺席</span><br><strong id="m_globalAbsent" style="font-size:20px;color:var(--danger)">-</strong></div>
+        <div><span style="font-size:13px;color:var(--ink);font-weight:600" data-i18n="stat_rate">全级出席率</span><br><strong id="m_globalPercent" style="font-size:20px;color:var(--info)">-</strong></div>
       </div>
 
-    </aside>
+      <div class="absent-list-box">
+        <h4 style="margin:0 0 12px 0;color:var(--danger);font-size:15px" data-i18n="absent_title">📝 缺席学生名单</h4>
+        <table class="absent-table">
+          <thead><tr><th data-i18n="th_absent_class">班级</th><th data-i18n="th_absent_name">姓名</th><th data-i18n="th_absent_gender">性别</th></tr></thead>
+          <tbody id="m_absentListBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
 
-    <!-- Center Canvas & Workspace Top Toolbar -->
-    <main class="flex-1 flex flex-col bg-slate-950 relative overflow-hidden">
-      
-      <div class="bg-slate-900/90 border-b border-slate-800 p-2 px-4 flex flex-wrap items-center justify-between gap-2 shadow-md z-10">
-        <div class="flex items-center space-x-2 flex-wrap gap-y-2">
-          
-          <!-- Unified Mode Switcher Buttons -->
-          <div class="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800 gap-1">
-            <button class="px-3 py-1.5 bg-indigo-600 text-white rounded-lg text-xs font-semibold flex items-center space-x-1.5 shadow-sm transition">
-              <i class="fa-solid fa-map text-indigo-200"></i>
-              <span data-i18n="btn_2d_view">2D 平面布局</span>
-            </button>
-            <button id="btn3DView" onclick="open3DModal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition">
-              <i class="fa-solid fa-cube text-amber-300"></i>
-              <span data-i18n="btn_3d_view">3D 空间全景</span>
-            </button>
-            <button onclick="exportCanvasImage()" class="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs font-bold flex items-center space-x-1.5 shadow-md transition">
-              <i class="fa-solid fa-download text-emerald-200 text-sm"></i>
-              <span data-i18n="btn_export_image">保存布局图片</span>
-            </button>
-            <button onclick="printFullReport()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-bold flex items-center space-x-1.5 shadow-md border border-indigo-400/30 transition">
-              <i class="fa-solid fa-print text-white text-sm"></i>
-              <span data-i18n="btn_print">打印完整报告 (2D+3D+诊断)</span>
-            </button>
-          </div>
+<!-- ========== 隐藏文件输入（恢复备份） ========== -->
+<input type="file" id="globalRestoreInput" accept=".json" onchange="restoreData(event)" style="display:none">
 
-          <button id="btnAIAnalyze" onclick="analyzeLayoutWithAI()" class="px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg text-xs font-semibold flex items-center space-x-1.5 shadow-sm transition ml-1">
-            <i class="fa-solid fa-wand-magic-sparkles text-amber-200"></i>
-            <span data-i18n="btn_ai_analyze">Analisis AI PAK-21</span>
-          </button>
+<!-- ========== 打印容器 ========== -->
+<div id="printContainer" style="display:none">
+  <!-- 打印头部统一区域 -->
+  <div class="print-header-wrap">
+    <img id="printLogo" class="print-header-logo" src="" alt="校徽" style="display:none">
+    <div id="printSchoolName" class="print-header-school">晏斗中华小学</div>
+    <div id="printLogTitle" class="print-header-title" data-i18n="log_header">学校日志</div>
+  </div>
 
-          <div class="h-4 w-[1px] bg-slate-700 mx-1 hidden sm:block"></div>
+  <div id="desktopPrintView">
+    <div class="print-info-row">
+      <div><span data-i18n="sem_label">学期</span> <strong class="dispSem">-</strong></div>
+      <div><span data-i18n="week_label">周次</span> <strong class="dispWeek">-</strong></div>
+      <div><span data-i18n="day_label">星期</span> <strong class="dispDay">-</strong></div>
+      <div><span data-i18n="date_label">日期</span> <strong class="dispDate">-</strong></div>
+    </div>
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th rowspan="2" data-i18n="th_class">班级</th>
+          <th colspan="2" data-i18n="th_total">在籍</th>
+          <th colspan="2" data-i18n="th_present">出席</th>
+          <th colspan="2" data-i18n="th_absent">缺席</th>
+          <th rowspan="2" data-i18n="th_notes">备注</th>
+          <th rowspan="2" data-i18n="th_rate">出席率</th>
+        </tr>
+        <tr><th>L</th><th>P</th><th>L</th><th>P</th><th>L</th><th>P</th></tr>
+      </thead>
+      <tbody id="printTableBodyDt"></tbody>
+    </table>
+    <div class="print-stats">
+      <div style="text-align:center"><span data-i18n="stat_total">今日全校总人数</span><br><strong id="printGlobalTotalDt" style="font-size:16px">-</strong></div>
+      <div style="text-align:center"><span data-i18n="stat_present">今日全级出席</span><br><strong id="printGlobalPresentDt" style="font-size:16px">-</strong></div>
+      <div style="text-align:center"><span data-i18n="stat_absent">今日全级缺席</span><br><strong id="printGlobalAbsentDt" style="font-size:16px">-</strong></div>
+      <div style="text-align:center"><span data-i18n="stat_rate">全级出席率</span><br><strong id="printGlobalPercentDt" style="font-size:16px">-</strong></div>
+    </div>
+    <div class="print-absent">
+      <h4 style="margin:0 0 10px 0;color:#000" data-i18n="absent_title">📝 缺席学生名单</h4>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr><th data-i18n="th_absent_class">班级</th><th data-i18n="th_absent_no">编号</th><th data-i18n="th_absent_name">姓名</th><th data-i18n="th_absent_gender">性别</th></tr></thead>
+        <tbody id="printAbsentListBodyDt"></tbody>
+      </table>
+    </div>
+  </div>
 
-          <!-- Alignments -->
-          <div class="flex items-center space-x-1 bg-slate-800/80 p-1 rounded-lg border border-slate-700/60">
-            <button onclick="alignSelected('left')" title="Rapat Kiri" class="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition"><i class="fa-solid fa-align-left text-xs"></i></button>
-            <button onclick="alignSelected('center')" title="Tengah Horizontal" class="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition"><i class="fa-solid fa-align-center text-xs"></i></button>
-            <button onclick="alignSelected('top')" title="Rapat Atas" class="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition"><i class="fa-solid fa-align-justify text-xs rotate-90"></i></button>
-            <button onclick="distributeSelected()" title="Agah Seimbang" class="p-1.5 text-slate-300 hover:text-white hover:bg-slate-700 rounded transition"><i class="fa-solid fa-arrows-left-right text-xs"></i></button>
-          </div>
+  <div id="mobilePrintView">
+    <div class="print-info-row">
+      <div><span data-i18n="sem_label">学期</span>: <strong class="dispSem">-</strong></div>
+      <div><span data-i18n="week_label">周次</span>: <strong class="dispWeek">-</strong></div>
+      <div><span data-i18n="day_label">星期</span>: <strong class="dispDay">-</strong></div>
+      <div><span data-i18n="date_label">日期</span>: <strong class="dispDate">-</strong></div>
+    </div>
+    <table class="print-table">
+      <thead>
+        <tr>
+          <th data-i18n="th_class_short">班级</th>
+          <th data-i18n="th_total_short">在籍<br>(L/P)</th>
+          <th data-i18n="th_present_short">出席<br>(L/P)</th>
+          <th data-i18n="th_absent_short">缺席<br>(L/P)</th>
+          <th data-i18n="th_rate_short">出席率</th>
+        </tr>
+      </thead>
+      <tbody id="printTableBodyMb"></tbody>
+    </table>
+    <div class="print-stats">
+      <div style="text-align:center"><span data-i18n="stat_total">全校总人数</span><br><strong id="printGlobalTotalMb" style="font-size:16px">-</strong></div>
+      <div style="text-align:center"><span data-i18n="stat_present">全级出席</span><br><strong id="printGlobalPresentMb" style="font-size:16px">-</strong></div>
+      <div style="text-align:center"><span data-i18n="stat_absent">全级缺席</span><br><strong id="printGlobalAbsentMb" style="font-size:16px">-</strong></div>
+      <div style="text-align:center"><span data-i18n="stat_rate">全级出席率</span><br><strong id="printGlobalPercentMb" style="font-size:16px">-</strong></div>
+    </div>
+    <div class="print-absent">
+      <h4 style="margin:0 0 10px 0;color:#000" data-i18n="absent_title">📝 缺席学生名单</h4>
+      <table style="width:100%;border-collapse:collapse">
+        <thead><tr><th data-i18n="th_absent_class">班级</th><th data-i18n="th_absent_name">姓名</th><th data-i18n="th_absent_gender">性别</th></tr></thead>
+        <tbody id="printAbsentListBodyMb"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
-          <!-- Toggles -->
-          <label class="inline-flex items-center cursor-pointer text-xs text-slate-300 ml-1">
-            <input type="checkbox" id="chkPathways" onchange="drawCanvas()" class="sr-only peer" checked>
-            <div class="w-7 h-4 bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-indigo-600 relative"></div>
-            <span class="ml-1.5" data-i18n="toggle_pathways">Laluan Traffic</span>
+<!-- ========== 系统管理弹窗：学校与教师 ========== -->
+<div id="manageSchoolModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 data-i18n="modal_school">🏫 学校与教师管理</h3>
+      <button class="close-btn" onclick="closeManageModal()">×</button>
+    </div>
+
+    <!-- 学校设置 -->
+    <h4 style="margin:5px 0 12px 0;color:var(--primary)" data-i18n="school_settings">🏫 学校设置</h4>
+    <div style="background:#fcf9f8;padding:16px;border-radius:12px;margin-bottom:20px;border:1px solid var(--border)">
+      <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="flex:2;min-width:180px">
+          <label style="font-size:13px;color:var(--ink);font-weight:600;display:block;margin-bottom:6px" data-i18n="school_name_label">学校名称</label>
+          <input type="text" id="schoolNameInput" placeholder="例如：晏斗中华小学" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;min-height:auto">
+        </div>
+        <div style="flex:1;min-width:140px">
+          <label style="font-size:13px;color:var(--ink);font-weight:600;display:block;margin-bottom:6px" data-i18n="school_logo_label">校徽</label>
+          <label style="display:block;background:var(--secondary);color:white;padding:10px 12px;text-align:center;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s" onmouseover="this.style.background='#e09252'" onmouseout="this.style.background='var(--secondary)'">
+            <span data-i18n="btn_upload_logo">上传校徽</span>
+            <input type="file" accept="image/*" onchange="uploadSchoolLogo(event)" style="display:none">
           </label>
         </div>
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="saveSchoolSettings()" style="flex:1;background:var(--success);color:white;border:none;padding:10px;border-radius:8px;font-size:13px;cursor:pointer" data-i18n="btn_save_settings">保存学校设置</button>
+        <button onclick="removeSchoolLogo()" style="flex:1;background:var(--danger);color:white;border:none;padding:10px;border-radius:8px;font-size:13px;cursor:pointer" data-i18n="btn_remove_logo">移除校徽</button>
+      </div>
+    </div>
 
-        <div class="flex items-center space-x-2">
-          <button onclick="clearAllFurniture()" class="px-2.5 py-1.5 bg-slate-800 hover:bg-rose-900/50 text-slate-300 hover:text-rose-200 border border-slate-700 rounded-lg text-xs transition" data-i18n="btn_clear">
-            <i class="fa-solid fa-rotate-left mr-1"></i> Reset
-          </button>
+    <!-- 教师账号管理 -->
+    <h4 style="margin:5px 0 12px 0;color:var(--primary)" data-i18n="teacher_management">👩‍🏫 教师账号管理</h4>
+    <div style="background:#fcf9f8;padding:16px;border-radius:12px;margin-bottom:20px;border:1px solid var(--border)">
+      <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+        <div style="flex:2;min-width:160px">
+          <label style="font-size:13px;color:var(--ink);font-weight:600;display:block;margin-bottom:6px" data-i18n="teacher_email_label">教师邮箱</label>
+          <input type="email" id="newTeacherEmail" placeholder="teacher@school.com" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;min-height:auto">
+        </div>
+        <div style="flex:1;min-width:120px">
+          <label style="font-size:13px;color:var(--ink);font-weight:600;display:block;margin-bottom:6px" data-i18n="teacher_password_label">初始密码</label>
+          <input type="text" id="newTeacherPassword" placeholder="至少6位" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;min-height:auto">
+        </div>
+        <div style="flex:1;min-width:100px;display:flex;align-items:flex-end">
+          <button onclick="addTeacher()" style="width:100%;background:var(--success);color:white;border:none;padding:11px;border-radius:8px;font-size:13px;cursor:pointer" data-i18n="btn_add_teacher">添加教师</button>
         </div>
       </div>
+      <p style="font-size:12px;color:var(--muted);margin:0 0 12px 0;line-height:1.5" data-i18n="teacher_tip">添加教师后，系统会在 Supabase Auth 创建账号并在 user_roles 中写入 teacher 角色。教师首次登录后请自行修改密码。</p>
+      <div id="teacherManageList" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:white"></div>
+    </div>
 
-      <!-- 2D Canvas Workspace Container -->
-      <div id="canvasContainer" class="flex-1 w-full h-full relative bg-slate-950 flex items-center justify-center p-4 overflow-hidden">
-        <canvas id="classroomCanvas" class="bg-slate-900 rounded-2xl shadow-2xl border border-slate-800 cursor-crosshair"></canvas>
-      </div>
-
-      <!-- Bottom Real-time PAK-21 Evaluator Metric Bar -->
-      <div class="bg-slate-900/95 border-t border-slate-800 p-3 px-4 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs z-10">
-        <div class="bg-slate-800/60 p-2 rounded-xl border border-slate-700/50 flex items-center space-x-3">
-          <div class="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
-            <i class="fa-solid fa-users text-sm"></i>
-          </div>
-          <div>
-            <div class="text-[10px] text-slate-400" data-i18n="metric_capacity">Kapasiti Murid</div>
-            <div id="txtCapacity" class="font-bold text-sm text-white">0 Orang</div>
-          </div>
-        </div>
-
-        <div class="bg-slate-800/60 p-2 rounded-xl border border-slate-700/50 flex items-center space-x-3">
-          <div class="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center">
-            <i class="fa-solid fa-comments text-sm"></i>
-          </div>
-          <div>
-            <div class="text-[10px] text-slate-400" data-i18n="metric_collab">Skor Kolaborasi</div>
-            <div id="txtCollabScore" class="font-bold text-sm text-teal-300">85% (Tinggi)</div>
-          </div>
-        </div>
-
-        <div class="bg-slate-800/60 p-2 rounded-xl border border-slate-700/50 flex items-center space-x-3">
-          <div class="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-            <i class="fa-solid fa-eye text-sm"></i>
-          </div>
-          <div>
-            <div class="text-[10px] text-slate-400" data-i18n="metric_sightline">Pandangan Guru</div>
-            <div id="txtSightline" class="font-bold text-sm text-emerald-300">92% Jelas</div>
-          </div>
-        </div>
-
-        <div class="bg-slate-800/60 p-2 rounded-xl border border-slate-700/50 flex items-center space-x-3">
-          <div class="w-8 h-8 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center">
-            <i class="fa-solid fa-shoe-prints text-sm"></i>
-          </div>
-          <div>
-            <div class="text-[10px] text-slate-400" data-i18n="metric_corridors">Kelancaran Laluan</div>
-            <div id="txtFlow" class="font-bold text-sm text-amber-300">Baik (1.2m)</div>
-          </div>
-        </div>
-      </div>
-    </main>
+    <!-- 教师班级分配 -->
+    <h4 style="margin:5px 0 12px 0;color:var(--primary)" data-i18n="teacher_assignment">🔗 教师班级分配</h4>
+    <div style="background:#fcf9f8;padding:16px;border-radius:12px;margin-bottom:20px;border:1px solid var(--border)">
+      <label for="teacherSelect" style="font-size:13px;color:var(--ink);font-weight:600;display:block;margin-bottom:6px" data-i18n="select_teacher">选择教师账号</label>
+      <select id="teacherSelect" onchange="renderAssignmentChoices()" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;min-height:auto;margin-bottom:12px"></select>
+      <div id="assignmentChoices" style="margin:12px 0;display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+      <button onclick="saveAssignments()" style="width:100%;background:var(--info);color:white;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer" data-i18n="btn_save_assignment">保存班级分配</button>
+    </div>
   </div>
+</div>
 
-  <!-- 3D Room Visualizer Modal -->
-  <div id="modal3D" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden shadow-2xl relative">
-      <div class="p-3 px-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80 flex-wrap gap-2">
-        <div class="flex items-center space-x-3">
-          <div class="w-9 h-9 rounded-xl bg-indigo-600/30 border border-indigo-500/50 flex items-center justify-center text-indigo-400">
-            <i class="fa-solid fa-cube text-lg"></i>
-          </div>
-          <div>
-            <h3 class="text-base font-bold text-white" data-i18n="modal_3d_title">Visualisasi 3D Bilik Darjah</h3>
-            <p class="text-xs text-slate-400" data-i18n="modal_3d_sub">Gunakan tetikus untuk pusing (drag), Zum (scroll) dan ubah pandangan</p>
-          </div>
-        </div>
-        
-        <div class="flex items-center space-x-2 flex-wrap gap-1">
-          <button onclick="export3DImage()" class="px-3 py-1 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg text-xs flex items-center space-x-1.5 shadow-md transition mr-1">
-            <i class="fa-solid fa-camera text-emerald-200"></i>
-            <span data-i18n="btn_export_3d_photo">截取 3D 效果图</span>
-          </button>
-          <button onclick="printFullReport()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg text-xs flex items-center space-x-1.5 shadow-md transition mr-2">
-            <i class="fa-solid fa-print text-white"></i>
-            <span data-i18n="btn_print_3d_report">打印报告</span>
-          </button>
+<!-- ========== 系统管理弹窗：学生与班级 ========== -->
+<div id="manageStudentModal" class="modal-overlay">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h3 data-i18n="modal_student">👨‍🎓 学生与班级管理</h3>
+      <button class="close-btn" onclick="closeManageModal()">×</button>
+    </div>
 
-          <button onclick="reset3DCamera('persp')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs border border-slate-700 flex items-center space-x-1 transition">
-            <i class="fa-solid fa-arrows-to-eye text-indigo-400"></i>
-            <span>Perspective</span>
-          </button>
-          <button onclick="reset3DCamera('top')" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded text-xs border border-slate-700 flex items-center space-x-1 transition">
-            <i class="fa-solid fa-border-all text-teal-400"></i>
-            <span>Top Down</span>
-          </button>
-          <button onclick="close3DModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition ml-2">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-      </div>
-      <div id="canvas3DContainer" class="flex-1 w-full h-full relative bg-slate-950">
-        <div id="loading3D" class="absolute inset-0 flex items-center justify-center text-indigo-400 font-semibold space-x-2 bg-slate-950/60 z-10 hidden">
-          <i class="fa-solid fa-circle-notch fa-spin text-xl"></i>
-          <span>Menjana Model 3D...</span>
-        </div>
+    <!-- 班级管理 -->
+    <h4 style="margin:5px 0 12px 0;color:var(--primary)" data-i18n="manage_classes">🏫 班级管理</h4>
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+      <input type="text" id="newClassName" placeholder="新班级名称" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;min-height:auto">
+      <button onclick="addClass()" style="background:var(--primary);color:white;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:600" data-i18n="btn_add">添加</button>
+    </div>
+    <div id="classManageList" style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-bottom:20px"></div>
+
+    <!-- 学生管理 -->
+    <h4 style="margin:20px 0 12px 0;color:var(--primary)" data-i18n="manage_students">👨‍🎓 学生管理</h4>
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+      <select id="manageClassSelect" onchange="renderStudentManageList()" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;min-height:auto"></select>
+      <button onclick="reorderStudentNumbers()" style="background:#a78b7a;color:white;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:600" data-i18n="btn_reorder">重排</button>
+    </div>
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+      <input type="text" id="newName" placeholder="学生姓名" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;min-height:auto">
+      <select id="newGender" style="width:70px;padding:10px;border:1px solid var(--border);border-radius:8px;min-height:auto">
+        <option value="L">L</option>
+        <option value="P">P</option>
+      </select>
+      <button onclick="addStudent()" style="background:var(--success);color:white;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:600" data-i18n="btn_add">添加</button>
+    </div>
+    <div id="studentManageList" style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-bottom:20px"></div>
+
+    <!-- CSV 导入 -->
+    <div style="background:#fcf9f8;padding:12px;border-radius:12px;border:1px solid var(--border)">
+      <p style="font-size:13px;margin:0 0 12px 0;color:var(--ink);font-weight:500" data-i18n="csv_tip">上传 CSV 批量导入学生 (Class,Name,Gender)</p>
+      <div style="display:flex;gap:10px">
+        <label style="flex:1;background:var(--info);color:white;padding:12px;text-align:center;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s" onmouseover="this.style.background='#916fa8'" onmouseout="this.style.background='var(--info)'">
+          <span data-i18n="btn_upload">上传 CSV</span>
+          <input type="file" accept=".csv" onchange="importAllStudentsCSV(event)" style="display:none">
+        </label>
+        <button onclick="downloadAllStudentsTemplate()" style="flex:1;background:var(--warning);color:var(--ink);border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer" data-i18n="btn_template">下载模板</button>
       </div>
     </div>
   </div>
+</div>
 
-  <!-- AI Analysis Modal -->
-  <div id="modalAI" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center p-4">
-    <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[85vh] flex flex-col overflow-hidden shadow-2xl">
-      <div class="p-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/60">
-        <div class="flex items-center space-x-3">
-          <div class="w-9 h-9 rounded-xl bg-teal-600/30 border border-teal-500/50 flex items-center justify-center text-teal-400">
-            <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
-          </div>
-          <div>
-            <h3 class="text-base font-bold text-white" data-i18n="modal_ai_title">Laporan AI PAK-21 Consultant</h3>
-            <p class="text-xs text-slate-400" data-i18n="modal_ai_sub">Analisis Susun Atur & Cadangan Pedagogi Interaktif</p>
-          </div>
-        </div>
-        <div class="flex items-center space-x-2">
-          <button onclick="printFullReport()" class="px-3 py-1 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold rounded-lg text-xs flex items-center space-x-1.5 shadow-md transition">
-            <i class="fa-solid fa-print text-white"></i>
-            <span data-i18n="btn_print_ai_report">打印诊断报告</span>
-          </button>
-          <button onclick="closeAIModal()" class="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-      </div>
-      <div class="p-6 overflow-y-auto space-y-4 text-slate-200 text-sm leading-relaxed custom-scrollbar" id="aiResultContent">
-        <div class="flex flex-col items-center justify-center py-12 space-y-3 text-teal-400">
-          <i class="fa-solid fa-circle-notch fa-spin text-3xl"></i>
-          <p class="font-medium text-slate-300" data-i18n="modal_ai_loading">AI sedang menganalisis susun atur bilik darjah anda...</p>
-        </div>
-      </div>
-    </div>
-  </div>
+<script>
+/* ============================================================
+   Supabase 配置
+   ============================================================ */
+const SUPABASE_URL = "https://ihvuhpxqmdngndtwhcit.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_HV2QeD8li6TW-3fDcoljJg_BVjZe69G";
+const CONFIG_READY = SUPABASE_URL.startsWith("https://") &&
+  !SUPABASE_URL.includes("PASTE_") &&
+  !SUPABASE_ANON_KEY.includes("PASTE_") &&
+  SUPABASE_ANON_KEY.length > 20;
 
-  <!-- Hidden Printable Document Area -->
-  <div id="printReportArea" class="hidden p-8 bg-white text-slate-900 font-sans">
-    <div class="border-b-2 border-indigo-600 pb-4 mb-6 flex justify-between items-end">
-      <div>
-        <h1 class="text-2xl font-bold text-slate-900" id="printReportTitle">21世纪智能教室空间设计与 PAK-21 评估报告</h1>
-        <p class="text-xs text-slate-500" id="printReportSubtitle">Smart Classroom Layout, 3D Spatial Visualization & AI Pedagogical Audit</p>
-      </div>
-      <div class="text-right text-xs text-slate-600">
-        <div id="printDate" class="font-medium">日期: 2026-10-06</div>
-        <div>PAK-21 Standard Compliant</div>
-      </div>
-    </div>
+/* ============================================================
+   多语言字典
+   ============================================================ */
+const i18n = {
+  zh: {
+    app_title: "学校出席与日志系统",
+    login_title: "账号登录",
+    login_desc: "请使用管理员或教师账号登录。没有获分配班级的教师不会看到任何班级资料。",
+    login_email: "邮箱",
+    login_password: "密码",
+    login_btn: "登录",
+    login_note: "账号由系统管理员预先建立；本页面不开放自行注册。若忘记密码，请联系管理员重设。",
+    console_title: "📋 点名控制台",
+    date_label: "点名日期",
+    sem_label: "学期",
+    week_label: "周次",
+    day_label: "星期",
+    select_class_title: "选择班级",
+    btn_all_present: "✅ 全部出席",
+    btn_all_absent: "❌ 全部缺席",
+    btn_manage_school: "🏫 学校与教师",
+    btn_manage_student: "👨‍🎓 学生管理",
+    btn_backup: "💾 备份数据",
+    btn_restore: "📂 恢复数据",
+    btn_save: "💾 保存点名",
+    btn_print: "🖨️ 打印报告",
+    btn_back: "返回",
+    btn_view_log: "📊 查看学校日志",
+    attendance_tip: "默认全员出席。点击学生名字将其标记为缺席 (变红)。",
+    log_title: "📊 学校日志",
+    log_header: "学校日志",
+    th_class: "班级",
+    th_total: "在籍",
+    th_present: "出席",
+    th_absent: "缺席",
+    th_notes: "备注",
+    th_rate: "出席率",
+    th_class_short: "班级",
+    th_total_short: "在籍<br>(L/P)",
+    th_present_short: "出席<br>(L/P)",
+    th_absent_short: "缺席<br>(L/P)",
+    th_rate_short: "出席率",
+    stat_total: "今日全校总人数",
+    stat_present: "今日全级出席",
+    stat_absent: "今日全级缺席",
+    stat_rate: "全级出席率",
+    absent_title: "📝 缺席学生名单",
+    th_absent_class: "班级",
+    th_absent_no: "编号",
+    th_absent_name: "姓名",
+    th_absent_gender: "性别",
+    modal_school: "🏫 学校与教师管理",
+    modal_student: "👨‍🎓 学生与班级管理",
+    csv_tip: "上传 CSV 批量导入学生 (Class,Name,Gender)",
+    btn_upload: "上传 CSV",
+    btn_template: "下载模板",
+    manage_classes: "🏫 班级管理",
+    manage_students: "👨‍🎓 学生管理",
+    btn_add: "添加",
+    btn_reorder: "重排",
+    days: ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'],
+    students_count: "人",
+    th_total_label: "在籍",
+    th_present_label: "出席",
+    th_absent_label: "缺席",
+    th_notes_label: "备注",
+    all_present_msg: "🎉 今日全员出席",
+    total_label: "总计",
+    no_classes: "目前没有分配到此账号的班级。请联系管理员分配班级。",
+    no_students: "此班级尚未建立学生名单。",
+    school_settings: "🏫 学校设置",
+    school_name_label: "学校名称",
+    school_logo_label: "校徽",
+    btn_upload_logo: "上传校徽",
+    btn_save_settings: "保存学校设置",
+    btn_remove_logo: "移除校徽",
+    edit_student: "编辑",
+    save_student: "保存",
+    cancel: "取消",
+    move_class: "调班",
+    move_to: "调至",
+    confirm_move: "确认调班",
+    backup_restored: "✅ 备份已恢复！页面将刷新。",
+    invalid_backup: "备份文件格式不正确。",
+    restore_confirm: "确定要恢复备份吗？当前云端数据不会被覆盖，但本地界面状态将重置。",
+    backup_tip: "备份将导出所有班级、学生及出席记录（JSON 格式）。",
+    teacher_management: "👩‍🏫 教师账号管理",
+    teacher_email_label: "教师邮箱",
+    teacher_password_label: "初始密码",
+    btn_add_teacher: "添加教师",
+    teacher_tip: "添加教师后，系统会在 Supabase Auth 创建账号并在 user_roles 中写入 teacher 角色。教师首次登录后请自行修改密码。",
+    teacher_added: "✅ 教师账号已创建。",
+    teacher_exists: "此邮箱已存在。",
+    teacher_no_list: "尚无教师账号。",
+    delete_teacher_confirm: "确定删除教师账号？此操作会同时删除 user_roles 记录，但 Auth 用户需在 Supabase 后台手动删除。",
+    teacher_deleted: "✅ 教师角色记录已删除。Auth 用户请到 Supabase 后台移除。",
+    teacher_assignment: "🔗 教师班级分配",
+    select_teacher: "选择教师账号",
+    btn_save_assignment: "保存班级分配",
+    assignment_saved: "✅ 教师班级分配已保存。",
+    no_teachers_for_assignment: "请先建立教师账号。",
+    no_classes_for_assignment: "请先建立班级。",
+    select_teacher_first: "请先选择教师账号。"
+  },
+  en: {
+    app_title: "School Attendance & Log System",
+    login_title: "Account Login",
+    login_desc: "Please log in with an admin or teacher account. Teachers without assigned classes will not see any class data.",
+    login_email: "Email",
+    login_password: "Password",
+    login_btn: "Log in",
+    login_note: "Accounts are pre-created by the system administrator; self-registration is not available. Contact the admin to reset your password.",
+    console_title: "📋 Attendance Console",
+    date_label: "Date",
+    sem_label: "Sem",
+    week_label: "Week",
+    day_label: "Day",
+    select_class_title: "Select Class",
+    btn_all_present: "✅ All Present",
+    btn_all_absent: "❌ All Absent",
+    btn_manage_school: "🏫 School & Teachers",
+    btn_manage_student: "👨‍🎓 Students",
+    btn_backup: "💾 Backup",
+    btn_restore: "📂 Restore",
+    btn_save: "💾 Save",
+    btn_print: "🖨️ Print Report",
+    btn_back: "Back",
+    btn_view_log: "📊 View School Log",
+    attendance_tip: "All present by default. Tap name to mark absent (Red).",
+    log_title: "📊 School Log",
+    log_header: "School Log",
+    th_class: "Class",
+    th_total: "Enrolled",
+    th_present: "Present",
+    th_absent: "Absent",
+    th_notes: "Notes",
+    th_rate: "Rate",
+    th_class_short: "Class",
+    th_total_short: "Enrolled<br>(L/P)",
+    th_present_short: "Present<br>(L/P)",
+    th_absent_short: "Absent<br>(L/P)",
+    th_rate_short: "Rate",
+    stat_total: "Total Students",
+    stat_present: "Total Present",
+    stat_absent: "Total Absent",
+    stat_rate: "Overall Rate",
+    absent_title: "📝 Absentee List",
+    th_absent_class: "Class",
+    th_absent_no: "No.",
+    th_absent_name: "Name",
+    th_absent_gender: "Gender",
+    modal_school: "🏫 School & Teachers",
+    modal_student: "👨‍🎓 Students & Classes",
+    csv_tip: "Upload CSV (Class,Name,Gender)",
+    btn_upload: "Upload CSV",
+    btn_template: "Download Template",
+    manage_classes: "🏫 Manage Classes",
+    manage_students: "👨‍🎓 Manage Students",
+    btn_add: "Add",
+    btn_reorder: "Reorder",
+    days: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
+    students_count: "students",
+    th_total_label: "Enrolled",
+    th_present_label: "Present",
+    th_absent_label: "Absent",
+    th_notes_label: "Notes",
+    all_present_msg: "🎉 All present today",
+    total_label: "Total",
+    no_classes: "No classes assigned to this account. Please contact the administrator.",
+    no_students: "No students in this class yet.",
+    school_settings: "🏫 School Settings",
+    school_name_label: "School Name",
+    school_logo_label: "School Logo",
+    btn_upload_logo: "Upload Logo",
+    btn_save_settings: "Save Settings",
+    btn_remove_logo: "Remove Logo",
+    edit_student: "Edit",
+    save_student: "Save",
+    cancel: "Cancel",
+    move_class: "Move",
+    move_to: "To",
+    confirm_move: "Confirm Move",
+    backup_restored: "✅ Backup restored! Page will refresh.",
+    invalid_backup: "Invalid backup file format.",
+    restore_confirm: "Restore this backup? Cloud data will not be overwritten, but local UI state will reset.",
+    backup_tip: "Backup exports all classes, students, and attendance records (JSON).",
+    teacher_management: "👩‍🏫 Teacher Accounts",
+    teacher_email_label: "Teacher Email",
+    teacher_password_label: "Initial Password",
+    btn_add_teacher: "Add Teacher",
+    teacher_tip: "Adding a teacher creates a Supabase Auth account and inserts a teacher role in user_roles. Teachers should change their password after first login.",
+    teacher_added: "✅ Teacher account created.",
+    teacher_exists: "This email already exists.",
+    teacher_no_list: "No teacher accounts yet.",
+    delete_teacher_confirm: "Delete teacher role record? The Auth user must be removed manually in the Supabase dashboard.",
+    teacher_deleted: "✅ Teacher role record deleted. Remove the Auth user in Supabase dashboard.",
+    teacher_assignment: "🔗 Teacher Class Assignment",
+    select_teacher: "Select Teacher Account",
+    btn_save_assignment: "Save Assignments",
+    assignment_saved: "✅ Teacher class assignments saved.",
+    no_teachers_for_assignment: "Please create teacher accounts first.",
+    no_classes_for_assignment: "Please create classes first.",
+    select_teacher_first: "Please select a teacher account first."
+  },
+  ms: {
+    app_title: "Sistem Kehadiran & Log Sekolah",
+    login_title: "Log Masuk Akaun",
+    login_desc: "Sila log masuk dengan akaun admin atau guru. Guru tanpa kelas yang ditetapkan tidak akan melihat sebarang data kelas.",
+    login_email: "E-mel",
+    login_password: "Kata Laluan",
+    login_btn: "Log Masuk",
+    login_note: "Akaun dicipta oleh pentadbir sistem; pendaftaran sendiri tidak dibenarkan. Hubungi pentadbir untuk set semula kata laluan.",
+    console_title: "📋 Konsol Kehadiran",
+    date_label: "Tarikh",
+    sem_label: "Sem",
+    week_label: "Minggu",
+    day_label: "Hari",
+    select_class_title: "Pilih Kelas",
+    btn_all_present: "✅ Semua Hadir",
+    btn_all_absent: "❌ Semua Tidak Hadir",
+    btn_manage_school: "🏫 Sekolah & Guru",
+    btn_manage_student: "👨‍🎓 Pelajar",
+    btn_backup: "💾 Sandar",
+    btn_restore: "📂 Pulih",
+    btn_save: "💾 Simpan",
+    btn_print: "🖨️ Cetak Laporan",
+    btn_back: "Kembali",
+    btn_view_log: "📊 Lihat Log Sekolah",
+    attendance_tip: "Semua hadir secara lalai. Ketik nama untuk tanda tidak hadir (Merah).",
+    log_title: "📊 Log Sekolah",
+    log_header: "Rekod Harian Sekolah",
+    th_class: "Kelas",
+    th_total: "Keramaian",
+    th_present: "Kedatangan",
+    th_absent: "Tak Hadir",
+    th_notes: "Catatan",
+    th_rate: "Kadar",
+    th_class_short: "Kelas",
+    th_total_short: "Keramaian<br>(L/P)",
+    th_present_short: "Hadir<br>(L/P)",
+    th_absent_short: "Tidak Hadir<br>(L/P)",
+    th_rate_short: "Kadar",
+    stat_total: "Jumlah Pelajar",
+    stat_present: "Jumlah Hadir",
+    stat_absent: "Jumlah Tidak Hadir",
+    stat_rate: "Kadar Keseluruhan",
+    absent_title: "📝 Senarai Tidak Hadir",
+    th_absent_class: "Kelas",
+    th_absent_no: "No.",
+    th_absent_name: "Nama",
+    th_absent_gender: "Jantina",
+    modal_school: "🏫 Pengurusan Sekolah & Guru",
+    modal_student: "👨‍🎓 Pengurusan Pelajar & Kelas",
+    csv_tip: "Muat naik CSV (Class,Name,Gender)",
+    btn_upload: "Muat Naik CSV",
+    btn_template: "Templat",
+    manage_classes: "🏫 Urus Kelas",
+    manage_students: "👨‍🎓 Urus Pelajar",
+    btn_add: "Tambah",
+    btn_reorder: "Susun",
+    days: ['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'],
+    students_count: "pelajar",
+    th_total_label: "Keramaian",
+    th_present_label: "Hadir",
+    th_absent_label: "Tidak Hadir",
+    th_notes_label: "Catatan",
+    all_present_msg: "🎉 Semua hadir hari ini",
+    total_label: "Jumlah",
+    no_classes: "Tiada kelas ditetapkan untuk akaun ini. Sila hubungi pentadbir.",
+    no_students: "Tiada pelajar dalam kelas ini.",
+    school_settings: "🏫 Tetapan Sekolah",
+    school_name_label: "Nama Sekolah",
+    school_logo_label: "Logo Sekolah",
+    btn_upload_logo: "Muat Naik Logo",
+    btn_save_settings: "Simpan Tetapan",
+    btn_remove_logo: "Buang Logo",
+    edit_student: "Edit",
+    save_student: "Simpan",
+    cancel: "Batal",
+    move_class: "Pindah",
+    move_to: "Ke",
+    confirm_move: "Sahkan Pindah",
+    backup_restored: "✅ Sandaran dipulihkan! Halaman akan dimuat semula.",
+    invalid_backup: "Format fail sandaran tidak sah.",
+    restore_confirm: "Pulihkan sandaran ini? Data awan tidak akan ditimpa, tetapi keadaan UI setempat akan ditetapkan semula.",
+    backup_tip: "Sandaran mengeksport semua kelas, pelajar dan rekod kehadiran (JSON).",
+    teacher_management: "👩‍🏫 Akaun Guru",
+    teacher_email_label: "E-mel Guru",
+    teacher_password_label: "Kata Laluan Awal",
+    btn_add_teacher: "Tambah Guru",
+    teacher_tip: "Menambah guru akan mencipta akaun Supabase Auth dan memasukkan peranan guru dalam user_roles. Guru perlu tukar kata laluan selepas log masuk pertama.",
+    teacher_added: "✅ Akaun guru dicipta.",
+    teacher_exists: "E-mel ini sudah wujud.",
+    teacher_no_list: "Tiada akaun guru lagi.",
+    delete_teacher_confirm: "Padam rekod peranan guru? Pengguna Auth perlu dibuang secara manual di papan pemuka Supabase.",
+    teacher_deleted: "✅ Rekod peranan guru dipadam. Buang pengguna Auth di papan pemuka Supabase.",
+    teacher_assignment: "🔗 Penetapan Kelas Guru",
+    select_teacher: "Pilih Akaun Guru",
+    btn_save_assignment: "Simpan Penetapan",
+    assignment_saved: "✅ Penetapan kelas guru disimpan.",
+    no_teachers_for_assignment: "Sila cipta akaun guru terlebih dahulu.",
+    no_classes_for_assignment: "Sila cipta kelas terlebih dahulu.",
+    select_teacher_first: "Sila pilih akaun guru terlebih dahulu."
+  }
+};
 
-    <!-- Metrics Summary Bar -->
-    <div class="grid grid-cols-4 gap-4 p-3 bg-slate-100 rounded-lg border border-slate-300 text-center mb-6 text-xs">
-      <div>
-        <div class="text-slate-500 font-semibold" data-i18n="label_room_size">教室尺寸</div>
-        <div id="printRoomSize" class="font-bold text-slate-800 text-sm">10m × 8m</div>
-      </div>
-      <div>
-        <div class="text-slate-500 font-semibold" data-i18n="metric_capacity">学生容量</div>
-        <div id="printCapacity" class="font-bold text-slate-800 text-sm">30 人</div>
-      </div>
-      <div>
-        <div class="text-slate-500 font-semibold" data-i18n="metric_collab">协作评分</div>
-        <div id="printCollabScore" class="font-bold text-indigo-700 text-sm">85% (高)</div>
-      </div>
-      <div>
-        <div class="text-slate-500 font-semibold" data-i18n="metric_sightline">视线通透度</div>
-        <div id="printSightline" class="font-bold text-emerald-700 text-sm">94% 清晰</div>
-      </div>
-    </div>
+/* ============================================================
+   状态变量
+   ============================================================ */
+let supabaseClient = null;
+let currentUser = null;
+let currentRole = null;
+let currentLang = localStorage.getItem('appLang') || 'zh';
+let classes = [];
+let selectedClassId = null;
+let students = [];
+let attendance = new Map();
+let teachers = [];
+let currentDateStr = "";
+let isMobile = window.innerWidth < 768;
+let schoolSettings = JSON.parse(localStorage.getItem('schoolSettings') || '{"name":"","logo":""}');
+let adminGlobalData = []; // 管理员专用：全校所有班级的数据
 
-    <!-- Layout Visuals Section -->
-    <div class="grid grid-cols-2 gap-6 mb-8">
-      <div class="border border-slate-300 rounded-lg p-3 bg-slate-50 flex flex-col items-center">
-        <h3 class="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide">1. 2D 平面布局图 (Floor Plan)</h3>
-        <img id="print2DImage" class="w-full h-auto rounded border border-slate-200 max-h-[300px] object-contain" alt="2D Layout">
-      </div>
-      <div class="border border-slate-300 rounded-lg p-3 bg-slate-50 flex flex-col items-center">
-        <h3 class="text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide">2. 3D 空间效果全景 (3D Perspective)</h3>
-        <img id="print3DImage" class="w-full h-auto rounded border border-slate-200 max-h-[300px] object-contain" alt="3D View">
-      </div>
-    </div>
+// 学期定义
+const sem1Start = new Date(2026, 0, 12);
+const sem1End = new Date(2026, 4, 22);
+const sem2Start = new Date(2026, 5, 8);
+const sem2End = new Date(2026, 11, 4);
 
-    <!-- AI Diagnostic Report Section -->
-    <div class="border border-slate-300 rounded-lg p-5 bg-white">
-      <h3 class="text-sm font-bold text-indigo-900 mb-3 border-b border-slate-200 pb-2 flex items-center gap-2">
-        <span>3. AI PAK-21 空间诊断与教学建议报告</span>
-      </h3>
-      <div id="printAIContentArea" class="text-xs text-slate-800 leading-relaxed space-y-3">
-        <!-- Injected via JS -->
-      </div>
-    </div>
+const $ = id => document.getElementById(id);
 
-    <div class="mt-8 pt-4 border-t border-slate-300 text-center text-[10px] text-slate-500">
-      Generated by 21st Century Smart Classroom Layout Generator (PAK-21)
-    </div>
-  </div>
+/* ============================================================
+   工具函数
+   ============================================================ */
+function showStatus(id, message, type = "") {
+  const el = $(id);
+  el.textContent = message;
+  el.className = "status" + (type ? " " + type : "");
+  el.classList.remove("hidden");
+}
+function hideStatus(id) { $(id).classList.add("hidden"); }
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function todayLocal() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function selectedDate() {
+  const dtInput = isMobile ? $("m_dateInput") : $("dt_dateInput");
+  return (dtInput && dtInput.value) || todayLocal();
+}
+function selectedClass() { return classes.find(c => c.id === selectedClassId) || null; }
+function statusFor(studentId) { return attendance.has(studentId) ? attendance.get(studentId) : true; }
+function t(key) { return i18n[currentLang][key] || key; }
 
-  <script>
-    // Global State Variables
-    let roomWidth = 10;
-    let roomLength = 8;
-    let targetCapacity = 30;
-    let scale = 50;
-    let originX = 0;
-    let originY = 0;
-    let furnitureItems = [];
-    let selectedItem = null;
-    let isDragging = false;
-    let dragOffsetX = 0;
-    let dragOffsetY = 0;
-    let currentLang = 'zh';
-    let canvas = null;
-    let ctx = null;
+/* ============================================================
+   学校设置（名称 + 校徽）
+   ============================================================ */
+function applySchoolSettings() {
+  const nameEl = $("schoolNameText");
+  const logoEl = $("schoolLogo");
+  const defaultIcon = $("defaultIcon");
+  
+  if (schoolSettings.name) {
+    nameEl.textContent = schoolSettings.name + "｜" + t('app_title');
+  } else {
+    nameEl.textContent = "晏斗中华小学｜" + t('app_title');
+  }
+  
+  if (schoolSettings.logo) {
+    logoEl.src = schoolSettings.logo;
+    logoEl.style.display = "inline-block";
+    defaultIcon.style.display = "none"; // 有校徽时隐藏默认 Emoji
+  } else {
+    logoEl.src = "";
+    logoEl.style.display = "none";
+    defaultIcon.style.display = "inline-block"; // 无校徽时显示 Emoji
+  }
+  
+  const inp = $("schoolNameInput");
+  if (inp) inp.value = schoolSettings.name || "";
 
-    // Furniture Catalog Definitions
-    const furnitureTypes = {
-      student_pod: {
-        name: { zh: '课桌椅 (Pod)', en: 'Student Desk', ms: 'Meja Murid' },
-        width: 0.8, length: 0.6, color: '#3b82f6', icon: 'fa-user-large', capacity: 1
-      },
-      group_table: {
-        name: { zh: '小组讨论圆桌', en: 'Group Table', ms: 'Meja Kumpulan' },
-        width: 1.6, length: 1.6, color: '#6366f1', icon: 'fa-users', capacity: 6
-      },
-      standing_desk: {
-        name: { zh: '站立式工作台', en: 'Standing Desk', ms: 'Meja Berdiri' },
-        width: 1.2, length: 0.6, color: '#f43f5e', icon: 'fa-laptop', capacity: 2
-      },
-      teacher_desk: {
-        name: { zh: '教师工作台', en: 'Teacher Desk', ms: 'Meja Guru' },
-        width: 1.5, length: 0.8, color: '#10b981', icon: 'fa-chalkboard-user', capacity: 1
-      },
-      smart_board: {
-        name: { zh: '智能互动大屏', en: 'Smart Board', ms: 'Papan Pintar' },
-        width: 2.0, length: 0.3, color: '#f59e0b', icon: 'fa-tv', capacity: 0
-      },
-      beanbag: {
-        name: { zh: '懒人沙发/豆袋', en: 'Beanbag', ms: 'Kerusi Bantal' },
-        width: 0.8, length: 0.8, color: '#ec4899', icon: 'fa-couch', capacity: 1
-      },
-      bookshelf: {
-        name: { zh: '图书/器材柜', en: 'Bookshelf', ms: 'Rak Buku' },
-        width: 1.2, length: 0.5, color: '#8b5cf6', icon: 'fa-book-open', capacity: 0
-      },
-      quiet_booth: {
-        name: { zh: '静音学习舱', en: 'Quiet Booth', ms: 'Ruang Senyap' },
-        width: 1.2, length: 1.0, color: '#14b8a6', icon: 'fa-warehouse', capacity: 1
+  // 同步更新打印区域的头部信息
+  const printLogo = $("printLogo");
+  const printSchoolName = $("printSchoolName");
+  const printLogTitle = $("printLogTitle");
+  if (printSchoolName) printSchoolName.textContent = schoolSettings.name || "晏斗中华小学";
+  if (printLogo) {
+    if (schoolSettings.logo) {
+      printLogo.src = schoolSettings.logo;
+      printLogo.style.display = "block";
+    } else {
+      printLogo.src = "";
+      printLogo.style.display = "none";
+    }
+  }
+  if (printLogTitle) printLogTitle.textContent = t('log_header');
+}
+
+function saveSchoolSettings() {
+  const name = $("schoolNameInput").value.trim();
+  schoolSettings.name = name;
+  localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
+  applySchoolSettings();
+  alert("✅ 学校设置已保存。");
+}
+
+function uploadSchoolLogo(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    schoolSettings.logo = e.target.result;
+    localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
+    applySchoolSettings();
+    alert("✅ 校徽已更新。");
+  };
+  reader.readAsDataURL(file);
+  event.target.value = "";
+}
+
+function removeSchoolLogo() {
+  schoolSettings.logo = "";
+  localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
+  applySchoolSettings();
+}
+
+/* ============================================================
+   多语言
+   ============================================================ */
+function changeLanguage() {
+  currentLang = $("langSelect").value;
+  localStorage.setItem('appLang', currentLang);
+  applyLanguage();
+}
+function applyLanguage() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (i18n[currentLang][key]) el.innerHTML = i18n[currentLang][key];
+  });
+  applySchoolSettings(); // 更新标题和打印头部
+  updateWeekAndSemesterDisplay();
+  renderAllViews();
+  if ($("manageSchoolModal").style.display === 'flex' || $("manageStudentModal").style.display === 'flex') {
+    renderClassManageList();
+    renderStudentManageList();
+    renderTeacherManageList();
+  }
+}
+
+/* ============================================================
+   日期与学期计算
+   ============================================================ */
+function updateWeekAndSemesterDisplay() {
+  const dateVal = selectedDate();
+  if (!dateVal) return;
+  currentDateStr = dateVal;
+  const selectedDateObj = new Date(dateVal + 'T00:00:00');
+  let semester = "-", week = "-";
+
+  if (selectedDateObj >= sem1Start && selectedDateObj <= sem1End) {
+    semester = "1";
+    week = Math.ceil((Math.abs(selectedDateObj - sem1Start) / 86400000 + 1) / 7);
+  } else if (selectedDateObj >= sem2Start && selectedDateObj <= sem2End) {
+    semester = "2";
+    week = Math.ceil((Math.abs(selectedDateObj - sem2Start) / 86400000 + 1) / 7);
+  }
+
+  const dayName = i18n[currentLang].days[selectedDateObj.getDay()];
+  const formattedDate = `${selectedDateObj.getDate()}.${selectedDateObj.getMonth() + 1}.${selectedDateObj.getFullYear()}`;
+
+  document.querySelectorAll('.dispSem').forEach(el => el.innerText = semester);
+  document.querySelectorAll('.dispWeek').forEach(el => el.innerText = week);
+  document.querySelectorAll('.dispDay').forEach(el => el.innerText = dayName);
+  document.querySelectorAll('.dispDate').forEach(el => el.innerText = formattedDate);
+}
+
+function syncDate(source) {
+  if (source === 'dt') {
+    const v = $("dt_dateInput").value;
+    if ($("m_dateInput")) $("m_dateInput").value = v;
+  } else {
+    const v = $("m_dateInput").value;
+    if ($("dt_dateInput")) $("dt_dateInput").value = v;
+  }
+  updateWeekAndSemesterDisplay();
+  
+  if (currentRole === "admin") {
+    // 管理员：拉取全校数据
+    loadAdminGlobalData().then(() => renderAllViews());
+  } else if (selectedClassId) {
+    loadAttendance().then(() => { renderAllViews(); });
+  } else {
+    renderAllViews();
+  }
+}
+
+/* ============================================================
+   Supabase 初始化与认证
+   ============================================================ */
+async function init() {
+  const today = todayLocal();
+  if ($("dt_dateInput")) $("dt_dateInput").value = today;
+  if ($("m_dateInput")) $("m_dateInput").value = today;
+  $("langSelect").value = currentLang;
+  updateWeekAndSemesterDisplay();
+  applySchoolSettings();
+
+  if (!CONFIG_READY) {
+    showStatus("setupNotice", "尚未设置 Supabase 连接。请在 HTML 中填入 SUPABASE_URL 与 SUPABASE_ANON_KEY 后再部署。请只使用 Publishable/anon public key，切勿使用 service_role/secret key。", "error");
+    $("loginForm").querySelector("button").disabled = true;
+    return;
+  }
+  if (!window.supabase) {
+    showStatus("setupNotice", "Supabase JS 加载失败。请检查网络连接后重新载入。", "error");
+    return;
+  }
+
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  $("loginForm").addEventListener("submit", login);
+  $("dt_dateInput").addEventListener("change", () => syncDate('dt'));
+  $("m_dateInput").addEventListener("change", () => syncDate('m'));
+
+  const { data: { session } } = await supabaseClient.auth.getSession();
+  if (session) await enterApp(session.user);
+
+  window.addEventListener('resize', () => {
+    const wasMobile = isMobile;
+    isMobile = window.innerWidth < 768;
+    if (wasMobile !== isMobile) {
+      if (isMobile) {
+        $("m_dateInput").value = $("dt_dateInput").value;
+      } else {
+        $("dt_dateInput").value = $("m_dateInput").value;
       }
-    };
+      updateWeekAndSemesterDisplay();
+      renderAllViews();
+    }
+  });
+}
 
-    // Multilingual Translations Dictionary
-    const i18n = {
-      zh: {
-        app_subtitle: "21世纪智能教室空间布局与设计导出",
-        label_room_size: "教室尺寸:",
-        label_target_students: "目标人数:",
-        label_people_unit: "人",
-        heading_presets: "PAK-21 预设布局",
-        preset_group: "小组协作 (4-6人)",
-        preset_group_sub: "21世纪团队合作",
-        preset_ushape: "U型 / 马蹄形",
-        preset_ushape_sub: "演讲与全班讨论",
-        preset_stations: "多任务工作站",
-        preset_stations_sub: "数字、讨论与静修区",
-        preset_fishbowl: "鱼缸辩论型",
-        preset_fishbowl_sub: "同心圆辩论圈",
-        preset_herringbone: "人字形 / 斜角型",
-        preset_herringbone_sub: "45度双人斜向排列",
-        preset_bistro: "咖啡馆 Flexible 模式",
-        preset_bistro_sub: "高低错落项目学习",
-        preset_thornburg: "多维 3-Mod 空间",
-        preset_thornburg_sub: "篝火研讨、静修与水坑",
-        heading_palette: "家具与设备库",
-        heading_inspector: "所选家具设置",
-        label_rotation: "旋转角度:",
-        label_color: "家具主题颜色:",
-        btn_2d_view: "2D 平面布局",
-        btn_export_image: "保存布局图片",
-        btn_print: "打印完整报告 (2D+3D+诊断)",
-        btn_print_3d_report: "打印报告",
-        btn_print_ai_report: "打印诊断报告",
-        btn_export_3d_photo: "截取 3D 效果图",
-        btn_3d_view: "3D 空间全景",
-        btn_ai_analyze: "AI PAK-21 诊断",
-        toggle_pathways: "显示通行走廊",
-        btn_clear: "重置",
-        metric_capacity: "容纳学生数",
-        metric_collab: "协作匹配度",
-        metric_sightline: "教师视线透明度",
-        metric_corridors: "走廊通畅度",
-        modal_3d_title: "3D 教室实景预览",
-        modal_3d_sub: "按住鼠标左键旋转视角，滚轮缩放",
-        modal_ai_title: "AI PAK-21 空间诊断报告",
-        modal_ai_sub: "智能空间布局分析与互动教学建议",
-        modal_ai_loading: "AI 正在分析您的教室空间布局...",
-        modal_ai_success_title: "诊断分析已完成",
-        modal_ai_success_sub: "基于 PAK-21 标准与人体工程学设计",
-        modal_ai_error: "获取 AI 诊断结果失败，请稍后再试。"
-      },
-      en: {
-        app_subtitle: "Interactive 21st Century Classroom Spatial Design & Layout Exporter",
-        label_room_size: "Room Dimensions:",
-        label_target_students: "Student Count:",
-        label_people_unit: "pax",
-        heading_presets: "PAK-21 Layout Presets",
-        preset_group: "Group Clusters (4-6)",
-        preset_group_sub: "Collaborative Learning",
-        preset_ushape: "Horseshoe / U-Shape",
-        preset_ushape_sub: "Presentation & Debates",
-        preset_stations: "Station Rotation",
-        preset_stations_sub: "ICT, Group & Quiet Zones",
-        preset_fishbowl: "Fishbowl Formation",
-        preset_fishbowl_sub: "Concentric Debate Rings",
-        preset_herringbone: "Herringbone / Angled",
-        preset_herringbone_sub: "45° Dual-Desk Rows",
-        preset_bistro: "Cafe & Studio Style",
-        preset_bistro_sub: "Flexible Multilevel Space",
-        preset_thornburg: "Thornburg 3-Zone Space",
-        preset_thornburg_sub: "Campfire, Cave & Watering Hole",
-        heading_palette: "Furniture Catalog",
-        heading_inspector: "Item Inspector",
-        label_rotation: "Rotation (Degrees):",
-        label_color: "Item Accent Color:",
-        btn_2d_view: "2D Layout Plan",
-        btn_export_image: "Save Layout Photo",
-        btn_print: "Print Full Report (2D+3D+Audit)",
-        btn_print_3d_report: "Print Report",
-        btn_print_ai_report: "Print Audit",
-        btn_export_3d_photo: "Capture 3D Photo",
-        btn_3d_view: "3D Spatial View",
-        btn_ai_analyze: "AI PAK-21 Audit",
-        toggle_pathways: "Traffic Corridors",
-        btn_clear: "Reset All",
-        metric_capacity: "Student Capacity",
-        metric_collab: "Collab Score",
-        metric_sightline: "Sightline Visibility",
-        metric_corridors: "Corridor Clearance",
-        modal_3d_title: "3D Classroom Preview",
-        modal_3d_sub: "Drag mouse to orbit, scroll to zoom",
-        modal_ai_title: "AI PAK-21 Spatial Audit Report",
-        modal_ai_sub: "Smart Spatial Layout Analysis & Interactive Pedagogical Advice",
-        modal_ai_loading: "AI is analyzing your classroom layout...",
-        modal_ai_success_title: "Analysis Completed",
-        modal_ai_success_sub: "Based on PAK-21 standards & ergonomics",
-        modal_ai_error: "Failed to retrieve AI analysis. Please try again."
-      },
-      ms: {
-        app_subtitle: "Penjana Rekabentuk Bilik Darjah & Eksport Pelan Abad Ke-21",
-        label_room_size: "Saiz Bilik:",
-        label_target_students: "Jumlah Murid:",
-        label_people_unit: "orang",
-        heading_presets: "Preset Susun Atur PAK-21",
-        preset_group: "Kumpulan 4-6",
-        preset_group_sub: "Kolaborasi Abad 21",
-        preset_ushape: "Bentuk U / Tapak Kuda",
-        preset_ushape_sub: "Pembentangan & Diskusi",
-        preset_stations: "Rotasi Stesen",
-        preset_stations_sub: "ICT, Diskusi & Gua",
-        preset_fishbowl: "Fishbowl Debate",
-        preset_fishbowl_sub: "Bulatan Perbahasan",
-        preset_herringbone: "Tulang Ikan",
-        preset_herringbone_sub: "Barisan Bersudut 45°",
-        preset_bistro: "Gaya Kafe / Studio",
-        preset_bistro_sub: "Pembelajaran Fleksibel",
-        preset_thornburg: "Zon 3-Mod (Thornburg)",
-        preset_thornburg_sub: "Unggun Api, Gua & Kolam",
-        heading_palette: "Perabot & Kelengkapan",
-        heading_inspector: "Tetapan Perabot",
-        label_rotation: "Putaran (Ijazah):",
-        label_color: "Warna Item:",
-        btn_2d_view: "Pelan 2D",
-        btn_export_image: "Simpan Gambar Pelan",
-        btn_print: "Cetak Laporan Lengkap (2D+3D+Diagnosis)",
-        btn_print_3d_report: "Cetak Laporan",
-        btn_print_ai_report: "Cetak Diagnosis",
-        btn_export_3d_photo: "Tangkap Foto 3D",
-        btn_3d_view: "Pandangan 3D",
-        btn_ai_analyze: "Analisis AI PAK-21",
-        toggle_pathways: "Laluan Traffic",
-        btn_clear: "Reset",
-        metric_capacity: "Kapasiti Murid",
-        metric_collab: "Skor Kolaborasi",
-        metric_sightline: "Pandangan Guru",
-        metric_corridors: "Kelancaran Laluan",
-        modal_3d_title: "Visualisasi 3D Bilik Darjah",
-        modal_3d_sub: "Gunakan tetikus untuk pusing (drag), Zum (scroll)",
-        modal_ai_title: "Laporan AI PAK-21 Consultant",
-        modal_ai_sub: "Analisis Susun Atur & Cadangan Pedagogi Interaktif",
-        modal_ai_loading: "AI sedang menganalisis susun atur bilik darjah anda...",
-        modal_ai_success_title: "Analisis Selesai",
-        modal_ai_success_sub: "Berdasarkan piawaian PAK-21 & Rekabentuk Ergonomik",
-        modal_ai_error: "Gagal mendapat respons daripada ejen AI. Sila cuba lagi."
+async function login(e) {
+  e.preventDefault();
+  hideStatus("loginStatus");
+  const { data, error } = await supabaseClient.auth.signInWithPassword({
+    email: $("email").value.trim(),
+    password: $("password").value
+  });
+  if (error) { showStatus("loginStatus", "登录失败：" + error.message, "error"); return; }
+  await enterApp(data.user);
+}
+
+async function signOut() {
+  await supabaseClient.auth.signOut();
+  currentUser = null; currentRole = null; classes = []; selectedClassId = null;
+  adminGlobalData = [];
+  $("appPanel").classList.add("hidden");
+  $("loginPanel").classList.remove("hidden");
+  $("logoutBtn").classList.add("hidden");
+  $("userBadge").classList.add("hidden");
+}
+
+async function enterApp(user) {
+  currentUser = user;
+  const { data: roleRow, error } = await supabaseClient
+    .from("user_roles")
+    .select("role,email")
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (error || !roleRow) {
+    await supabaseClient.auth.signOut();
+    showStatus("loginStatus", "无法读取账号角色。请管理员确认 public.user_roles 已设置此账号的角色及读取权限。" + (error ? " 错误：" + error.message : ""), "error");
+    return;
+  }
+  currentRole = roleRow.role;
+  $("loginPanel").classList.add("hidden");
+  $("appPanel").classList.remove("hidden");
+  $("logoutBtn").classList.remove("hidden");
+  $("userBadge").classList.remove("hidden");
+  $("userBadge").textContent = roleRow.email || user.email || "已登录";
+
+  // 管理员按钮显示
+  if ($("adminBtns")) $("adminBtns").style.display = currentRole === "admin" ? "grid" : "none";
+  if ($("adminBtns2")) $("adminBtns2").style.display = currentRole === "admin" ? "grid" : "none";
+  if ($("mobileAdminBtns")) $("mobileAdminBtns").style.display = currentRole === "admin" ? "flex" : "none";
+
+  await loadClasses();
+  if (currentRole === "admin") {
+    await loadAdminData();
+    await loadAdminGlobalData();
+  }
+  renderAllViews();
+}
+
+/* ============================================================
+   班级与学生数据加载
+   ============================================================ */
+async function loadClasses() {
+  const { data, error } = await supabaseClient.from("classes").select("id,name").order("name");
+  if (error) { showStatus("appStatus", "读取班级失败：" + error.message, "error"); return; }
+  classes = data || [];
+  if (!classes.some(c => c.id === selectedClassId)) selectedClassId = classes.length ? classes[0].id : null;
+  updateClassDropdowns();
+  
+  if (currentRole === "admin") {
+    // 管理员的班级学生数据统一在 loadAdminGlobalData 中加载
+  } else if (selectedClassId) {
+    await loadStudents();
+    await loadAttendance();
+  } else {
+    students = [];
+    attendance = new Map();
+  }
+  renderAllViews();
+}
+
+async function loadStudents() {
+  if (!selectedClassId) { students = []; return; }
+  const { data, error } = await supabaseClient
+    .from("students")
+    .select("id,class_id,student_no,name,gender,active")
+    .eq("class_id", selectedClassId)
+    .eq("active", true)
+    .order("student_no");
+  if (error) { showStatus("appStatus", "读取学生名单失败：" + error.message, "error"); return; }
+  students = data || [];
+}
+
+async function loadAttendance() {
+  if (!selectedClassId || currentRole === "admin") return; // 管理员不单独拉取某个班
+  const ids = students.map(s => s.id);
+  attendance = new Map();
+  if (!ids.length) return;
+  const { data, error } = await supabaseClient
+    .from("attendance_records")
+    .select("student_id,present")
+    .eq("attendance_date", selectedDate())
+    .in("student_id", ids);
+  if (error) { showStatus("appStatus", "读取出席记录失败：" + error.message, "error"); return; }
+  (data || []).forEach(r => attendance.set(r.student_id, r.present));
+}
+
+/* ---------- 管理员专用：加载全校数据 ---------- */
+async function loadAdminGlobalData() {
+  if (currentRole !== "admin" || !classes.length) {
+    adminGlobalData = [];
+    return;
+  }
+  
+  const date = selectedDate();
+  
+  // 1. 一次性拉取全校所有学生
+  const { data: allStudents, error: sErr } = await supabaseClient
+    .from("students")
+    .select("id,class_id,student_no,name,gender,active")
+    .eq("active", true);
+  if (sErr) { showStatus("appStatus", "读取全校学生失败：" + sErr.message, "error"); return; }
+  
+  // 2. 一次性拉取当天全校出席记录
+  const { data: allAtt, error: aErr } = await supabaseClient
+    .from("attendance_records")
+    .select("student_id,present")
+    .eq("attendance_date", date);
+  if (aErr) { showStatus("appStatus", "读取全校出席失败：" + aErr.message, "error"); return; }
+  
+  const attMap = new Map((allAtt || []).map(r => [r.student_id, r.present]));
+  const grouped = {};
+  
+  classes.forEach(c => {
+    grouped[c.id] = {
+      id: c.id,
+      name: c.name,
+      students: (allStudents || []).filter(s => s.class_id === c.id).sort((a,b)=>a.student_no-b.student_no)
+    };
+  });
+  
+  adminGlobalData = classes.map(c => {
+    const clsStudents = grouped[c.id].students;
+    return {
+      ...grouped[c.id],
+      attendance: clsStudents.map(s => ({
+        ...s,
+        present: attMap.has(s.id) ? attMap.get(s.id) : true
+      }))
+    };
+  });
+  
+  // 同步当前选中班级的本地数据，以便左侧控制台显示
+  const curCls = adminGlobalData.find(c => c.id === selectedClassId);
+  if (curCls) {
+    students = curCls.students;
+    attendance = new Map(curCls.attendance.map(s => [s.id, s.present]));
+  }
+}
+
+/* ============================================================
+   下拉选择与班级切换
+   ============================================================ */
+function updateClassDropdowns() {
+  const dtSelect = $("dt_classSelect");
+  const mSelect = $("manageClassSelect");
+  const sorted = [...classes].sort((a, b) => a.name.localeCompare(b.name));
+
+  if (dtSelect) {
+    const cur = dtSelect.value;
+    dtSelect.innerHTML = "";
+    sorted.forEach(c => dtSelect.add(new Option(c.name, c.id)));
+    if (cur && sorted.some(c => c.id === cur)) dtSelect.value = cur;
+    else if (sorted.length) dtSelect.value = selectedClassId || sorted[0].id;
+    selectedClassId = dtSelect.value || null;
+  }
+  if (mSelect) {
+    const cur = mSelect.value;
+    mSelect.innerHTML = "";
+    sorted.forEach(c => mSelect.add(new Option(c.name, c.id)));
+    if (cur && sorted.some(c => c.id === cur)) mSelect.value = cur;
+    else if (sorted.length) mSelect.value = sorted[0].id;
+  }
+}
+
+async function changeClass(source) {
+  if (source === 'dt') selectedClassId = $("dt_classSelect").value;
+  if (!selectedClassId) return;
+  
+  if (currentRole === "admin") {
+    // 管理员只需同步左侧控制台显示（右侧日志一直是全校）
+    const curCls = adminGlobalData.find(c => c.id === selectedClassId);
+    if (curCls) {
+      students = curCls.students;
+      attendance = new Map(curCls.attendance.map(s => [s.id, s.present]));
+    }
+    renderAllViews();
+  } else {
+    await loadStudents();
+    await loadAttendance();
+    renderAllViews();
+  }
+  if (currentRole === "admin") renderStudentManageList();
+}
+
+/* ============================================================
+   点名交互
+   ============================================================ */
+function toggleAttendance(id) {
+  const newStatus = !statusFor(id);
+  attendance.set(id, newStatus);
+  
+  // 如果是管理员，同步更新全局数据
+  if (currentRole === "admin") {
+    const curCls = adminGlobalData.find(c => c.id === selectedClassId);
+    if (curCls) {
+      const st = curCls.attendance.find(s => s.id === id);
+      if (st) st.present = newStatus;
+    }
+  }
+  renderAllViews();
+}
+
+function batchSet(isPresent) {
+  if (!selectedClassId) return;
+  students.forEach(s => attendance.set(s.id, isPresent));
+  
+  if (currentRole === "admin") {
+    const curCls = adminGlobalData.find(c => c.id === selectedClassId);
+    if (curCls) {
+      curCls.attendance.forEach(st => st.present = isPresent);
+    }
+  }
+  renderAllViews();
+}
+
+async function saveAttendance() {
+  if (!selectedClassId || !currentUser) return;
+  const date = selectedDate();
+  const rows = students.map(s => ({
+    student_id: s.id,
+    attendance_date: date,
+    present: statusFor(s.id),
+    recorded_by: currentUser.id
+  }));
+  if (!rows.length) { showStatus("appStatus", "此班级没有学生可保存。", ""); return; }
+  const { error } = await supabaseClient
+    .from("attendance_records")
+    .upsert(rows, { onConflict: "student_id,attendance_date" });
+  if (error) { showStatus("appStatus", "保存失败：" + error.message, "error"); return; }
+  showStatus("appStatus", `已保存 ${selectedClass()?.name || ""} ${date} 的出席记录。`, "ok");
+  
+  if (currentRole === "admin") {
+    await loadAdminGlobalData(); // 重新从云端拉取最新全校状态
+  }
+  renderAllViews();
+  if (isMobile) goToPage('m_pageHome');
+}
+
+/* ============================================================
+   视图渲染（桌面 + 移动）
+   ============================================================ */
+function renderAllViews() {
+  renderDesktopAttendance();
+  renderDesktopLog();
+  renderMobileHome();
+  renderMobileAttendance();
+  renderMobileLog();
+}
+
+/* ---------- 桌面端 ---------- */
+function renderDesktopAttendance() {
+  const list = $("dt_studentList");
+  if (!list) return;
+  if (!selectedClassId || !students.length) {
+    list.innerHTML = `<p class="muted">${t('no_students')}</p>`;
+    return;
+  }
+  list.innerHTML = students.map(s => {
+    const present = statusFor(s.id);
+    return `<div class="student-card ${present ? 'present' : 'absent'}" onclick="toggleAttendance('${s.id}')">
+      <span class="no">#${s.student_no}</span>
+      <span class="name">${esc(s.name)}</span>
+      <span class="gender">(${esc(s.gender)})</span>
+    </div>`;
+  }).join("");
+}
+
+function renderDesktopLog() {
+  const tbody = $("dt_logTableBody");
+  const absTbody = $("dt_absentListBody");
+  if (!tbody) return;
+  const { data, grand, absentList } = computeLogData();
+
+  tbody.innerHTML = data.map(d => `
+    <tr>
+      <td>${esc(d.cls)}</td><td>${d.rL}</td><td>${d.rP}</td>
+      <td>${d.rPL}</td><td>${d.rPP}</td>
+      <td>${d.rAL}</td><td>${d.rAP}</td>
+      <td style="color:var(--danger);font-size:12px">${esc(d.catatan)}</td>
+      <td style="font-weight:bold;color:var(--info)">${d.rate}</td>
+    </tr>
+  `).join("");
+
+  tbody.innerHTML += `
+    <tr style="font-weight:bold;background:#fcf9f8">
+      <td>${t('total_label')}</td><td>${grand.totalL}</td><td>${grand.totalP}</td>
+      <td>${grand.pL}</td><td>${grand.pP}</td><td>${grand.aL}</td><td>${grand.aP}</td><td></td><td></td>
+    </tr>
+  `;
+
+  if (absTbody) {
+    if (absentList.length === 0) {
+      absTbody.innerHTML = `<tr><td colspan="4" style="color:var(--success);text-align:center">${t('all_present_msg')}</td></tr>`;
+    } else {
+      absTbody.innerHTML = absentList.map(a => `<tr><td>${esc(a.cls)}</td><td>${a.no}</td><td>${esc(a.name)}</td><td>${esc(a.gender)}</td></tr>`).join("");
+    }
+  }
+
+  if ($("dt_globalTotal")) $("dt_globalTotal").innerText = grand.totalL + grand.totalP;
+  if ($("dt_globalPresent")) $("dt_globalPresent").innerText = grand.pL + grand.pP;
+  if ($("dt_globalAbsent")) $("dt_globalAbsent").innerText = grand.aL + grand.aP;
+  if ($("dt_globalPercent")) $("dt_globalPercent").innerText = ((grand.pL+grand.pP)/(grand.totalL+grand.totalP)*100 || 0).toFixed(2) + "%";
+}
+
+/* ---------- 移动端 ---------- */
+function goToPage(pageId) {
+  document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+  const page = $(pageId);
+  if (page) page.classList.remove('hidden');
+  if (pageId === 'm_pageLog') renderMobileLog();
+}
+
+function renderMobileHome() {
+  if (!isMobile) return;
+  const grid = $("m_classGrid");
+  if (!grid) return;
+  if (!classes.length) {
+    grid.innerHTML = `<p class="muted">${t('no_classes')}</p>`;
+    return;
+  }
+  const sorted = [...classes].sort((a, b) => a.name.localeCompare(b.name));
+  grid.innerHTML = sorted.map(c => {
+    const clsInfo = currentRole === "admin" ? adminGlobalData.find(x => x.id === c.id) : null;
+    const count = clsInfo ? clsInfo.students.length : ((c.id === selectedClassId) ? students.length : 0);
+    return `<div class="class-btn" onclick="selectMobileClass('${c.id}')">
+      ${esc(c.name)}<span class="count">${count} ${t('students_count')}</span>
+    </div>`;
+  }).join("");
+}
+
+async function selectMobileClass(clsId) {
+  selectedClassId = clsId;
+  if (currentRole === "admin") {
+    const curCls = adminGlobalData.find(c => c.id === selectedClassId);
+    if (curCls) {
+      students = curCls.students;
+      attendance = new Map(curCls.attendance.map(s => [s.id, s.present]));
+    }
+  } else {
+    await loadStudents();
+    await loadAttendance();
+  }
+  const cls = selectedClass();
+  if ($("m_currentClassName")) $("m_currentClassName").innerText = cls ? cls.name : "-";
+  renderMobileAttendance();
+  goToPage('m_pageAttendance');
+}
+
+function renderMobileAttendance() {
+  if (!isMobile) return;
+  const list = $("m_studentList");
+  if (!list) return;
+  if (!selectedClassId || !students.length) {
+    list.innerHTML = `<p class="muted">${t('no_students')}</p>`;
+    return;
+  }
+  list.innerHTML = students.map(s => {
+    const present = statusFor(s.id);
+    return `<div class="student-card ${present ? '' : 'absent'}" onclick="toggleAttendance('${s.id}')">
+      <span class="no">#${s.student_no}</span>
+      <span class="name">${esc(s.name)}</span>
+    </div>`;
+  }).join("");
+}
+
+function renderMobileLog() {
+  if (!isMobile) return;
+  const container = $("m_logCardContainer");
+  const absTbody = $("m_absentListBody");
+  if (!container) return;
+  const { data, grand, absentList } = computeLogData();
+
+  container.innerHTML = data.map(d => `
+    <div class="log-card">
+      <div class="log-card-header">
+        <div class="log-card-title">${esc(d.cls)}</div>
+        <div class="log-card-rate">${d.rate}</div>
+      </div>
+      <div class="log-card-body">
+        <div class="log-data-group"><div class="title">${t('th_total_label')}</div><div class="value">${d.rL} / ${d.rP}</div></div>
+        <div class="log-data-group"><div class="title">${t('th_present_label')}</div><div class="value" style="color:var(--success)">${d.rPL} / ${d.rPP}</div></div>
+        <div class="log-data-group"><div class="title">${t('th_absent_label')}</div><div class="value" style="color:var(--danger)">${d.rAL} / ${d.rAP}</div></div>
+      </div>
+      ${d.catatan ? `<div class="log-card-notes">${t('th_notes_label')}: ${esc(d.catatan)}</div>` : ''}
+    </div>
+  `).join("");
+
+  if (absTbody) {
+    if (absentList.length === 0) {
+      absTbody.innerHTML = `<tr><td colspan="3" style="color:var(--success);padding:10px;text-align:center">${t('all_present_msg')}</td></tr>`;
+    } else {
+      absTbody.innerHTML = absentList.map(a => `<tr><td>${esc(a.cls)}</td><td>${esc(a.name)}</td><td>${esc(a.gender)}</td></tr>`).join("");
+    }
+  }
+
+  if ($("m_globalTotal")) $("m_globalTotal").innerText = grand.totalL + grand.totalP;
+  if ($("m_globalPresent")) $("m_globalPresent").innerText = grand.pL + grand.pP;
+  if ($("m_globalAbsent")) $("m_globalAbsent").innerText = grand.aL + grand.aP;
+  if ($("m_globalPercent")) $("m_globalPercent").innerText = ((grand.pL+grand.pP)/(grand.totalL+grand.totalP)*100 || 0).toFixed(2) + "%";
+}
+
+/* ============================================================
+   数据计算（日志）—— 管理员可看全校
+   ============================================================ */
+function computeLogData() {
+  let data = [];
+  let grand = { totalL:0, totalP:0, pL:0, pP:0, aL:0, aP:0 };
+  let absentList = [];
+
+  const sortedClasses = [...classes].sort((a, b) => a.name.localeCompare(b.name));
+
+  sortedClasses.forEach(cls => {
+    let clsStudents = [];
+    if (currentRole === "admin") {
+      // 管理员使用全校数据
+      const gData = adminGlobalData.find(c => c.id === cls.id);
+      if (gData) clsStudents = gData.attendance;
+    } else {
+      // 教师仅计算当前班级
+      if (cls.id === selectedClassId) {
+        clsStudents = students.map(s => ({ ...s, present: statusFor(s.id) }));
       }
-    };
+    }
 
-    const colorPalette = ['#3b82f6', '#6366f1', '#f43f5e', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6', '#ef4444'];
+    let rL=0, rP=0, rPL=0, rPP=0, rAL=0, rAP=0, rAbsentNos=[];
 
-    window.addEventListener('DOMContentLoaded', () => {
-      canvas = document.getElementById('classroomCanvas');
-      ctx = canvas.getContext('2d');
-
-      renderFurniturePalette();
-      renderColorPicker();
-      resizeCanvas();
-      loadPreset('groups');
-
-      window.addEventListener('resize', resizeCanvas);
-      setupCanvasEvents();
+    clsStudents.forEach(s => {
+      if (s.gender === 'L') rL++; else rP++;
+      if (s.present) {
+        if (s.gender === 'L') rPL++; else rPP++;
+      } else {
+        if (s.gender === 'L') rAL++; else rAP++;
+        rAbsentNos.push(s.student_no);
+        // 修正：把学生编号 s.student_no 传入进去
+        absentList.push({ cls: cls.name, no: s.student_no, name: s.name, gender: s.gender });
+      }
     });
 
-    function setLanguage(lang) {
-      currentLang = lang;
-      ['ms', 'en', 'zh'].forEach(l => {
-        const btn = document.getElementById(`lang-${l}`);
-        if (btn) {
-          if (l === lang) {
-            btn.className = "px-2 py-1 rounded font-semibold transition bg-indigo-600 text-white";
-          } else {
-            btn.className = "px-2 py-1 rounded font-semibold transition text-slate-400 hover:text-white";
-          }
-        }
-      });
-
-      // Update all elements with data-i18n
-      document.querySelectorAll('[data-i18n]').forEach(el => {
-        const key = el.getAttribute('data-i18n');
-        if (i18n[lang] && i18n[lang][key]) {
-          el.innerText = i18n[lang][key];
-        }
-      });
-
-      renderFurniturePalette();
-      updateInspector();
-      drawCanvas();
-      updateEvaluator();
-    }
-
-    function renderFurniturePalette() {
-      const container = document.getElementById('furniturePalette');
-      if (!container) return;
-      container.innerHTML = '';
-
-      Object.keys(furnitureTypes).forEach(typeKey => {
-        const item = furnitureTypes[typeKey];
-        const localizedName = (typeof item.name === 'object') ? (item.name[currentLang] || item.name.en) : item.name;
-
-        const card = document.createElement('button');
-        card.className = "p-2 bg-slate-800 hover:bg-slate-700/80 border border-slate-700/80 rounded-xl flex items-center space-x-2 transition text-left group";
-        card.onclick = () => addFurniture(typeKey);
-        card.innerHTML = `
-          <div class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs shadow-sm flex-shrink-0" style="background-color: ${item.color}">
-            <i class="fa-solid ${item.icon}"></i>
-          </div>
-          <div class="overflow-hidden">
-            <div class="text-[11px] font-semibold text-slate-200 group-hover:text-indigo-300 truncate" title="${localizedName}">${localizedName}</div>
-            <div class="text-[9px] text-slate-400">${item.width}m &times; ${item.length}m</div>
-          </div>
-        `;
-        container.appendChild(card);
-      });
-    }
-
-    function renderColorPicker() {
-      const container = document.getElementById('colorPickerContainer');
-      if (!container) return;
-      container.innerHTML = '';
-      colorPalette.forEach(color => {
-        const btn = document.createElement('button');
-        btn.className = "w-5 h-5 rounded-full border border-slate-600 hover:scale-110 transition shadow-sm";
-        btn.style.backgroundColor = color;
-        btn.onclick = () => updateSelectedProperty('color', color);
-        container.appendChild(btn);
-      });
-    }
-
-    function updateRoomDimensions() {
-      const wInput = parseFloat(document.getElementById('inputRoomW').value);
-      const lInput = parseFloat(document.getElementById('inputRoomL').value);
-
-      if (!isNaN(wInput) && wInput >= 4) roomWidth = wInput;
-      if (!isNaN(lInput) && lInput >= 4) roomLength = lInput;
-
-      resizeCanvas();
-    }
-
-    function updateTargetCapacity() {
-      const val = parseInt(document.getElementById('inputTargetCapacity').value);
-      if (!isNaN(val) && val >= 1) {
-        targetCapacity = val;
-        updateEvaluator();
-      }
-    }
-
-    function resizeCanvas() {
-      const container = document.getElementById('canvasContainer');
-      if (!container || !canvas) return;
-
-      const availWidth = container.clientWidth - 32;
-      const availHeight = container.clientHeight - 32;
-
-      // Fit classroom proportion with margin
-      const scaleX = availWidth / roomWidth;
-      const scaleY = availHeight / roomLength;
-      scale = Math.min(scaleX, scaleY, 75); // max 75px per meter
-
-      canvas.width = roomWidth * scale;
-      canvas.height = roomLength * scale;
-
-      originX = 0;
-      originY = 0;
-
-      drawCanvas();
-    }
-
-    // --- Furniture Logic & Layout Presets ---
-    function addFurniture(type) {
-      const typeInfo = furnitureTypes[type];
-      if (!typeInfo) return;
-
-      const newItem = {
-        id: Date.now() + Math.random(),
-        type: type,
-        x: roomWidth / 2,
-        y: roomLength / 2,
-        rotation: 0,
-        color: typeInfo.color
-      };
-
-      furnitureItems.push(newItem);
-      selectItem(newItem);
-      drawCanvas();
-      updateEvaluator();
-    }
-
-    function loadPreset(presetName) {
-      furnitureItems = [];
-      
-      // Always place Smart Board at top wall
-      furnitureItems.push({
-        id: 'board-1',
-        type: 'smart_board',
-        x: roomWidth / 2,
-        y: 0.3,
-        rotation: 0,
-        color: '#f59e0b'
-      });
-
-      // Always place Teacher Station near top right
-      furnitureItems.push({
-        id: 'teacher-1',
-        type: 'teacher_desk',
-        x: Math.min(roomWidth - 1.2, roomWidth * 0.85),
-        y: 1.2,
-        rotation: 0,
-        color: '#10b981'
-      });
-
-      if (presetName === 'groups') {
-        const clusters = [
-          { cx: roomWidth * 0.3, cy: roomLength * 0.4 },
-          { cx: roomWidth * 0.7, cy: roomLength * 0.4 },
-          { cx: roomWidth * 0.3, cy: roomLength * 0.75 },
-          { cx: roomWidth * 0.7, cy: roomLength * 0.75 },
-        ];
-
-        clusters.forEach((c) => {
-          furnitureItems.push({ id: Math.random(), type: 'group_table', x: c.cx, y: c.cy, rotation: 0, color: '#6366f1' });
-        });
-      } else if (presetName === 'ushape') {
-        const uPoints = [
-          { x: 2.0, y: 2.5, rot: 90 }, { x: 2.0, y: 4.0, rot: 90 }, { x: 2.0, y: 5.5, rot: 90 },
-          { x: roomWidth - 2.0, y: 2.5, rot: 270 }, { x: roomWidth - 2.0, y: 4.0, rot: 270 }, { x: roomWidth - 2.0, y: 5.5, rot: 270 },
-          { x: roomWidth * 0.35, y: 6.5, rot: 0 }, { x: roomWidth * 0.65, y: 6.5, rot: 0 }
-        ];
-
-        uPoints.forEach(pt => {
-          furnitureItems.push({ id: Math.random(), type: 'student_pod', x: pt.x, y: pt.y, rotation: pt.rot, color: '#3b82f6' });
-        });
-      } else if (presetName === 'stations') {
-        furnitureItems.push({ id: Math.random(), type: 'standing_desk', x: 2.0, y: 2.0, rotation: 0, color: '#f43f5e' });
-        furnitureItems.push({ id: Math.random(), type: 'group_table', x: roomWidth * 0.32, y: roomLength * 0.6, rotation: 0, color: '#6366f1' });
-        furnitureItems.push({ id: Math.random(), type: 'bookshelf', x: roomWidth - 1.0, y: roomLength * 0.45, rotation: 90, color: '#8b5cf6' });
-        furnitureItems.push({ id: Math.random(), type: 'student_pod', x: roomWidth - 2.2, y: roomLength * 0.45, rotation: 270, color: '#3b82f6' });
-        furnitureItems.push({ id: Math.random(), type: 'quiet_booth', x: 1.5, y: roomLength - 1.2, rotation: 0, color: '#14b8a6' });
-        furnitureItems.push({ id: Math.random(), type: 'beanbag', x: roomWidth - 1.5, y: roomLength - 1.2, rotation: 0, color: '#ec4899' });
-        furnitureItems.push({ id: Math.random(), type: 'beanbag', x: roomWidth - 2.5, y: roomLength - 1.2, rotation: 0, color: '#ec4899' });
-      } else if (presetName === 'fishbowl') {
-        const centerX = roomWidth * 0.5;
-        const centerY = roomLength * 0.55;
-
-        furnitureItems.push({ id: Math.random(), type: 'student_pod', x: centerX - 1.2, y: centerY, rotation: 90, color: '#06b6d4' });
-        furnitureItems.push({ id: Math.random(), type: 'student_pod', x: centerX + 1.2, y: centerY, rotation: 270, color: '#06b6d4' });
-        furnitureItems.push({ id: Math.random(), type: 'student_pod', x: centerX, y: centerY - 1.0, rotation: 180, color: '#06b6d4' });
-        furnitureItems.push({ id: Math.random(), type: 'student_pod', x: centerX, y: centerY + 1.0, rotation: 0, color: '#06b6d4' });
-
-        const radiusX = 3.0;
-        const radiusY = 2.2;
-        const totalOuter = 8;
-        for (let i = 0; i < totalOuter; i++) {
-          const angle = (i / totalOuter) * Math.PI * 2;
-          const px = centerX + Math.cos(angle) * radiusX;
-          const py = centerY + Math.sin(angle) * radiusY;
-          const deg = Math.round(((angle + Math.PI / 2) * 180) / Math.PI) % 360;
-          furnitureItems.push({ id: Math.random(), type: 'student_pod', x: px, y: py, rotation: deg, color: '#3b82f6' });
-        }
-      } else if (presetName === 'herringbone') {
-        const rowYs = [2.2, 3.8, 5.4, 6.8];
-        rowYs.forEach(y => {
-          furnitureItems.push({ id: Math.random(), type: 'student_pod', x: roomWidth * 0.28, y: y, rotation: 45, color: '#f59e0b' });
-          furnitureItems.push({ id: Math.random(), type: 'student_pod', x: roomWidth * 0.38, y: y - 0.2, rotation: 45, color: '#f59e0b' });
-          furnitureItems.push({ id: Math.random(), type: 'student_pod', x: roomWidth * 0.72, y: y, rotation: 315, color: '#3b82f6' });
-          furnitureItems.push({ id: Math.random(), type: 'student_pod', x: roomWidth * 0.62, y: y - 0.2, rotation: 315, color: '#3b82f6' });
-        });
-      } else if (presetName === 'bistro') {
-        furnitureItems.push({ id: Math.random(), type: 'standing_desk', x: roomWidth * 0.28, y: 2.2, rotation: 0, color: '#f43f5e' });
-        furnitureItems.push({ id: Math.random(), type: 'group_table', x: roomWidth * 0.75, y: 3.0, rotation: 0, color: '#6366f1' });
-        furnitureItems.push({ id: Math.random(), type: 'student_pod', x: roomWidth * 0.25, y: 4.8, rotation: 45, color: '#3b82f6' });
-        furnitureItems.push({ id: Math.random(), type: 'student_pod', x: roomWidth * 0.35, y: 5.5, rotation: 45, color: '#3b82f6' });
-        furnitureItems.push({ id: Math.random(), type: 'beanbag', x: roomWidth * 0.75, y: 6.0, rotation: 0, color: '#ec4899' });
-        furnitureItems.push({ id: Math.random(), type: 'beanbag', x: roomWidth * 0.88, y: 6.0, rotation: 0, color: '#ec4899' });
-        furnitureItems.push({ id: Math.random(), type: 'bookshelf', x: 1.0, y: roomLength - 1.2, rotation: 0, color: '#8b5cf6' });
-      } else if (presetName === 'thornburg') {
-        furnitureItems.push({ id: Math.random(), type: 'group_table', x: roomWidth * 0.35, y: roomLength * 0.4, rotation: 0, color: '#6366f1' });
-        furnitureItems.push({ id: Math.random(), type: 'group_table', x: roomWidth * 0.65, y: roomLength * 0.4, rotation: 0, color: '#6366f1' });
-        furnitureItems.push({ id: Math.random(), type: 'quiet_booth', x: 1.2, y: roomLength - 1.2, rotation: 0, color: '#14b8a6' });
-        furnitureItems.push({ id: Math.random(), type: 'beanbag', x: roomWidth - 1.2, y: roomLength - 1.2, rotation: 0, color: '#ec4899' });
-        furnitureItems.push({ id: Math.random(), type: 'beanbag', x: roomWidth - 2.2, y: roomLength - 1.2, rotation: 0, color: '#ec4899' });
-        furnitureItems.push({ id: Math.random(), type: 'bookshelf', x: 1.0, y: 3.0, rotation: 90, color: '#8b5cf6' });
-      }
-
-      selectedItem = null;
-      updateInspector();
-      drawCanvas();
-      updateEvaluator();
-    }
-
-    function drawCanvas() {
-      if (!ctx) return;
-
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Draw Grid Background (0.5m interval)
-      ctx.strokeStyle = '#1e293b';
-      ctx.lineWidth = 1;
-      const step = 0.5 * scale;
-
-      for (let x = 0; x <= canvas.width; x += step) {
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, canvas.height);
-        ctx.stroke();
-      }
-      for (let y = 0; y <= canvas.height; y += step) {
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(canvas.width, y);
-        ctx.stroke();
-      }
-
-      // Draw Traffic Flow Corridors (if toggled)
-      if (document.getElementById('chkPathways') && document.getElementById('chkPathways').checked) {
-        ctx.strokeStyle = 'rgba(52, 211, 153, 0.25)';
-        ctx.lineWidth = 1.2 * scale;
-        ctx.lineCap = 'round';
-        ctx.setLineDash([8, 8]);
-
-        ctx.beginPath();
-        ctx.moveTo(roomWidth * 0.5 * scale, (roomLength - 0.5) * scale);
-        ctx.lineTo(roomWidth * 0.5 * scale, 1.5 * scale);
-        ctx.stroke();
-
-        ctx.setLineDash([]);
-      }
-
-      // Draw Room Outer Border Walls
-      ctx.strokeStyle = '#475569';
-      ctx.lineWidth = 6;
-      ctx.strokeRect(0, 0, canvas.width, canvas.height);
-
-      // Draw Entrance Door Marker (Bottom Center)
-      ctx.fillStyle = '#6366f1';
-      ctx.fillRect((roomWidth / 2 - 0.6) * scale, canvas.height - 6, 1.2 * scale, 6);
-
-      // Draw All Furniture Items
-      furnitureItems.forEach(item => {
-        const typeInfo = furnitureTypes[item.type] || { width: 1, length: 1 };
-        const w = typeInfo.width * scale;
-        const h = typeInfo.length * scale;
-
-        ctx.save();
-        ctx.translate(item.x * scale, item.y * scale);
-        ctx.rotate((item.rotation || 0) * Math.PI / 180);
-
-        // Selection Highlight Ring
-        if (selectedItem && selectedItem.id === item.id) {
-          ctx.strokeStyle = '#38bdf8';
-          ctx.lineWidth = 3;
-          ctx.shadowColor = '#38bdf8';
-          ctx.shadowBlur = 10;
-          ctx.strokeRect(-w / 2 - 4, -h / 2 - 4, w + 8, h + 8);
-          ctx.shadowBlur = 0;
-        }
-
-        // Furniture Fill Shape
-        ctx.fillStyle = item.color || '#3b82f6';
-        ctx.beginPath();
-        if (item.type === 'group_table' || item.type === 'beanbag') {
-          ctx.arc(0, 0, w / 2, 0, Math.PI * 2);
-        } else {
-          ctx.roundRect(-w / 2, -h / 2, w, h, 6);
-        }
-        ctx.fill();
-
-        ctx.strokeStyle = 'rgba(255,255,255,0.3)';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        // Furniture Icon Label
-        ctx.fillStyle = '#ffffff';
-        ctx.font = `${Math.max(10, Math.min(16, w * 0.3))}px "Font Awesome 6 Free", Inter`;
-        ctx.fontWeight = "900";
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        
-        let iconChar = '\u25a2';
-        if (item.type === 'student_pod') iconChar = '\uf007';
-        if (item.type === 'group_table') iconChar = '\uf0c0';
-        if (item.type === 'standing_desk') iconChar = '\uf109';
-        if (item.type === 'teacher_desk') iconChar = '\uf51c';
-        if (item.type === 'smart_board') iconChar = '\uf26c';
-        if (item.type === 'beanbag') iconChar = '\uf7b8';
-        if (item.type === 'bookshelf') iconChar = '\uf02d';
-        if (item.type === 'quiet_booth') iconChar = '\uf6e2';
-
-        ctx.fillText(iconChar, 0, 0);
-
-        ctx.restore();
-      });
-    }
-
-    function setupCanvasEvents() {
-      canvas.addEventListener('mousedown', handlePointerDown);
-      canvas.addEventListener('mousemove', handlePointerMove);
-      window.addEventListener('mouseup', handlePointerUp);
-
-      canvas.addEventListener('touchstart', (e) => {
-        if (e.touches.length === 1) handlePointerDown(e.touches[0]);
-      });
-      canvas.addEventListener('touchmove', (e) => {
-        if (e.touches.length === 1) handlePointerMove(e.touches[0]);
-      });
-      window.addEventListener('touchend', handlePointerUp);
-    }
-
-    function getCanvasCoords(e) {
-      const rect = canvas.getBoundingClientRect();
-      const clientX = e.clientX || (e.touches && e.touches[0].clientX);
-      const clientY = e.clientY || (e.touches && e.touches[0].clientY);
-
-      return {
-        x: (clientX - rect.left) / scale,
-        y: (clientY - rect.top) / scale
-      };
-    }
-
-    function handlePointerDown(e) {
-      const pos = getCanvasCoords(e);
-
-      for (let i = furnitureItems.length - 1; i >= 0; i--) {
-        const item = furnitureItems[i];
-        const typeInfo = furnitureTypes[item.type] || { width: 1, length: 1 };
-        const halfW = typeInfo.width / 2;
-        const halfH = typeInfo.length / 2;
-
-        if (pos.x >= item.x - halfW && pos.x <= item.x + halfW &&
-            pos.y >= item.y - halfH && pos.y <= item.y + halfH) {
-          selectItem(item);
-          isDragging = true;
-          dragOffsetX = pos.x - item.x;
-          dragOffsetY = pos.y - item.y;
-          drawCanvas();
-          return;
-        }
-      }
-
-      selectItem(null);
-      drawCanvas();
-    }
-
-    function handlePointerMove(e) {
-      if (!isDragging || !selectedItem) return;
-      const pos = getCanvasCoords(e);
-
-      let newX = pos.x - dragOffsetX;
-      let newY = pos.y - dragOffsetY;
-
-      newX = Math.round(newX * 4) / 4;
-      newY = Math.round(newY * 4) / 4;
-
-      const typeInfo = furnitureTypes[selectedItem.type] || { width: 1, length: 1 };
-      const halfW = typeInfo.width / 2;
-      const halfH = typeInfo.length / 2;
-
-      selectedItem.x = Math.max(halfW, Math.min(roomWidth - halfW, newX));
-      selectedItem.y = Math.max(halfH, Math.min(roomLength - halfH, newY));
-
-      drawCanvas();
-      updateEvaluator();
-    }
-
-    function handlePointerUp() {
-      isDragging = false;
-    }
-
-    function selectItem(item) {
-      selectedItem = item;
-      updateInspector();
-    }
-
-    function updateInspector() {
-      const nameEl = document.getElementById('selectedItemName');
-      const controlsEl = document.getElementById('inspectorControls');
-      const rotInput = document.getElementById('inputRotation');
-      const rotTxt = document.getElementById('txtRotationVal');
-
-      if (selectedItem) {
-        const typeInfo = furnitureTypes[selectedItem.type];
-        const localizedName = typeInfo ? ((typeof typeInfo.name === 'object') ? (typeInfo.name[currentLang] || typeInfo.name.en) : typeInfo.name) : 'Item';
-        nameEl.innerText = localizedName;
-        controlsEl.classList.remove('opacity-50', 'pointer-events-none');
-        rotInput.value = selectedItem.rotation || 0;
-        rotTxt.innerText = `${selectedItem.rotation || 0}°`;
-      } else {
-        const noSelectTxt = currentLang === 'zh' ? '未选择家具' : (currentLang === 'ms' ? 'Tiada Dipilih' : 'None Selected');
-        nameEl.innerText = noSelectTxt;
-        controlsEl.classList.add('opacity-50', 'pointer-events-none');
-        rotInput.value = 0;
-        rotTxt.innerText = '0°';
-      }
-    }
-
-    function updateSelectedProperty(prop, val) {
-      if (!selectedItem) return;
-      if (prop === 'rotation') {
-        selectedItem.rotation = parseInt(val) || 0;
-        document.getElementById('txtRotationVal').innerText = `${selectedItem.rotation}°`;
-      } else if (prop === 'color') {
-        selectedItem.color = val;
-      }
-      drawCanvas();
-    }
-
-    function rotateSelected(deg) {
-      if (!selectedItem) return;
-      selectedItem.rotation = ((selectedItem.rotation || 0) + deg) % 360;
-      updateInspector();
-      drawCanvas();
-    }
-
-    function deleteSelected() {
-      if (!selectedItem) return;
-      furnitureItems = furnitureItems.filter(i => i.id !== selectedItem.id);
-      selectedItem = null;
-      updateInspector();
-      drawCanvas();
-      updateEvaluator();
-    }
-
-    function clearAllFurniture() {
-      furnitureItems = [];
-      selectedItem = null;
-      updateInspector();
-      drawCanvas();
-      updateEvaluator();
-    }
-
-    function alignSelected(mode) {
-      if (!selectedItem) return;
-      if (mode === 'left') selectedItem.x = 1.0;
-      if (mode === 'center') selectedItem.x = roomWidth / 2;
-      if (mode === 'top') selectedItem.y = 1.0;
-      drawCanvas();
-      updateEvaluator();
-    }
-
-    function distributeSelected() {
-      if (furnitureItems.length < 2) return;
-      furnitureItems.sort((a, b) => a.x - b.x);
-      const startX = 1.5;
-      const endX = roomWidth - 1.5;
-      const step = (endX - startX) / Math.max(1, furnitureItems.length - 1);
-      furnitureItems.forEach((item, idx) => {
-        item.x = startX + idx * step;
-      });
-      drawCanvas();
-      updateEvaluator();
-    }
-
-    function updateEvaluator() {
-      let totalCapacity = 0;
-      let collabCount = 0;
-
-      furnitureItems.forEach(item => {
-        const typeInfo = furnitureTypes[item.type];
-        if (typeInfo) {
-          totalCapacity += typeInfo.capacity || 0;
-          if (item.type === 'group_table' || item.type === 'student_pod' || item.type === 'quiet_booth' || item.type === 'standing_desk') {
-            collabCount += (typeInfo.capacity || 1);
-          }
-        }
-      });
-
-      const capEl = document.getElementById('txtCapacity');
-      if (capEl) {
-        const isMet = totalCapacity >= targetCapacity;
-        const statusText = isMet
-          ? `<span class="text-emerald-400 font-bold">${totalCapacity} / ${targetCapacity}</span> <span class="text-[10px] text-emerald-300">(${currentLang === 'zh' ? '已达标' : (currentLang === 'ms' ? 'Cukup' : 'Met')})</span>`
-          : `<span class="text-amber-400 font-bold">${totalCapacity} / ${targetCapacity}</span> <span class="text-[10px] text-amber-300">(${currentLang === 'zh' ? `还差${targetCapacity - totalCapacity}人` : (currentLang === 'ms' ? `Kurang ${targetCapacity - totalCapacity}` : `-${targetCapacity - totalCapacity}`)})</span>`;
-        capEl.innerHTML = statusText;
-      }
-
-      const collabRatio = totalCapacity > 0 ? Math.min(100, Math.round((collabCount / totalCapacity) * 100)) : 0;
-      document.getElementById('txtCollabScore').innerText = `${collabRatio}% (${collabRatio > 70 ? '优秀/Tinggi' : '一般/Sederhana'})`;
-
-      const hasBoard = furnitureItems.some(i => i.type === 'smart_board');
-      const sightlineScore = hasBoard ? (currentLang === 'zh' ? '94% 清晰' : '94% Clear') : (currentLang === 'zh' ? '需放置智能板' : 'Add Board');
-      document.getElementById('txtSightline').innerText = sightlineScore;
-    }
-
-    // --- Layout Export & Print Functions ---
-    function exportCanvasImage() {
-      if (!canvas) return;
-
-      // Create a clean high-resolution offscreen canvas with watermark title
-      const exportCanvas = document.createElement('canvas');
-      const padding = 40;
-      const headerHeight = 70;
-      exportCanvas.width = canvas.width + padding * 2;
-      exportCanvas.height = canvas.height + padding * 2 + headerHeight;
-
-      const eCtx = exportCanvas.getContext('2d');
-
-      // Background
-      eCtx.fillStyle = '#0f172a';
-      eCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
-
-      // Header Text
-      eCtx.fillStyle = '#ffffff';
-      eCtx.font = 'bold 20px Inter, sans-serif';
-      const titleText = currentLang === 'zh' ? "21世纪智能教室空间布局图 (PAK-21)" : "21st Century Smart Classroom Layout (PAK-21)";
-      eCtx.fillText(titleText, padding, 35);
-
-      eCtx.fillStyle = '#94a3b8';
-      eCtx.font = '12px Inter, sans-serif';
-      eCtx.fillText(`${currentLang === 'zh' ? '教室尺寸' : 'Room Size'}: ${roomWidth}m × ${roomLength}m | ${currentLang === 'zh' ? '学生容纳' : 'Capacity'}: ${document.getElementById('txtCapacity')?.innerText || ''}`, padding, 55);
-
-      // Draw original canvas
-      eCtx.drawImage(canvas, padding, headerHeight + padding);
-
-      // Export file download
-      const link = document.createElement('a');
-      link.download = `Classroom_Layout_${roomWidth}x${roomLength}m_${Date.now()}.png`;
-      link.href = exportCanvas.toDataURL('image/png');
-      link.click();
-    }
-
-    function printFullReport() {
-      // 1. Set metadata
-      document.getElementById('printDate').innerText = `Date: ${new Date().toLocaleDateString()}`;
-      document.getElementById('printRoomSize').innerText = `${roomWidth}m × ${roomLength}m`;
-      
-      const capText = document.getElementById('txtCapacity') ? document.getElementById('txtCapacity').innerText : `${targetCapacity} pax`;
-      document.getElementById('printCapacity').innerText = capText;
-      document.getElementById('printCollabScore').innerText = document.getElementById('txtCollabScore') ? document.getElementById('txtCollabScore').innerText : '85%';
-      document.getElementById('printSightline').innerText = document.getElementById('txtSightline') ? document.getElementById('txtSightline').innerText : 'Clear';
-
-      // 2. Capture 2D Canvas Image
-      if (canvas) {
-        document.getElementById('print2DImage').src = canvas.toDataURL('image/png');
-      }
-
-      // 3. Capture or Generate 3D Image Snapshot
-      const snapshot3D = generate3DSnapshotDataUrl();
-      document.getElementById('print3DImage').src = snapshot3D;
-
-      // 4. Set AI Diagnostic Content
-      const currentAiHTML = document.getElementById('aiResultContent').innerHTML;
-      const isDefaultAiState = currentAiHTML.includes('fa-circle-notch');
-
-      if (!isDefaultAiState && currentAiHTML.trim() !== '') {
-        document.getElementById('printAIContentArea').innerHTML = currentAiHTML;
-      } else {
-        // Fallback default structured PAK-21 report if AI hasn't been executed
-        const totalSeats = furnitureItems.reduce((acc, i) => acc + (furnitureTypes[i.type]?.capacity || 0), 0);
-        document.getElementById('printAIContentArea').innerHTML = `
-          <div class="space-y-2">
-            <p><strong>1. 空间容量与布局匹配:</strong> 教室规格为 ${roomWidth}m × ${roomLength}m，当前放置家具总容量为 <strong>${totalSeats} 人</strong>（目标容量 ${targetCapacity} 人）。${totalSeats >= targetCapacity ? '布局充分满足教学容量需求。' : '建议适当补充分组桌或多功能座椅以满足目标容量。'}</p>
-            <p><strong>2. 21世纪协作能力 (PAK-21 Collaboration):</strong> 当前采用灵活式模块化空间规划，协作评分达到 <strong>${document.getElementById('txtCollabScore')?.innerText || '85%'}</strong>，有利于小组讨论、探究式学习 (PBL) 与互动展示。</p>
-            <p><strong>3. 视线与通行走廊:</strong> 智能大屏视线清晰，中心主干通道通畅（建议维持 1.2m 以上主通道），便于教师巡视指导与学生快速组队。</p>
-            <p><strong>4. 教学策略建议:</strong> 推荐结合“站立讨论区”、“图书/器材区”及“静修区”实施多任务轮转教学 (Station Rotation)。</p>
-          </div>
-        `;
-      }
-
-      // 5. Trigger Print Window
-      setTimeout(() => {
-        window.print();
-      }, 200);
-    }
-
-    function generate3DSnapshotDataUrl() {
-      if (renderer3D && scene3D && camera3D) {
-        renderer3D.render(scene3D, camera3D);
-        return renderer3D.domElement.toDataURL('image/png');
-      }
-
-      // Create an offscreen WebGL renderer for clean 3D snapshot
-      const offCanvas = document.createElement('canvas');
-      offCanvas.width = 800;
-      offCanvas.height = 500;
-      const tempRenderer = new THREE.WebGLRenderer({ canvas: offCanvas, antialias: true, preserveDrawingBuffer: true });
-      tempRenderer.setPixelRatio(1);
-      tempRenderer.setSize(800, 500);
-
-      const tempScene = new THREE.Scene();
-      tempScene.background = new THREE.Color(0x0f172a);
-
-      const tempCamera = new THREE.PerspectiveCamera(45, 800 / 500, 0.1, 1000);
-      tempCamera.position.set(roomWidth / 2, Math.max(roomWidth, roomLength) * 1.1, roomLength * 1.3);
-      tempCamera.lookAt(roomWidth / 2, 0, roomLength / 2);
-
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-      tempScene.add(ambientLight);
-      const dirLight = new THREE.DirectionalLight(0xfff7ed, 0.9);
-      dirLight.position.set(roomWidth * 0.5, 12, roomLength * 0.5);
-      tempScene.add(dirLight);
-
-      // Floor
-      const floorGeo = new THREE.PlaneGeometry(roomWidth, roomLength);
-      const floorMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.5 });
-      const floor = new THREE.Mesh(floorGeo, floorMat);
-      floor.rotation.x = -Math.PI / 2;
-      floor.position.set(roomWidth / 2, 0, roomLength / 2);
-      tempScene.add(floor);
-
-      // Grid
-      const grid = new THREE.GridHelper(Math.max(roomWidth, roomLength) * 1.4, 20, 0x6366f1, 0x334155);
-      grid.position.set(roomWidth / 2, 0.01, roomLength / 2);
-      tempScene.add(grid);
-
-      // Furniture
-      furnitureItems.forEach(item => {
-        const typeInfo = furnitureTypes[item.type] || { width: 1, length: 1, color: '#3b82f6' };
-        const group = new THREE.Group();
-        group.position.set(item.x, 0, item.y);
-        group.rotation.y = -(item.rotation || 0) * (Math.PI / 180);
-
-        let meshColor = item.color || typeInfo.color || '#3b82f6';
-        let colorHex = parseInt(meshColor.replace('#', '0x')) || 0x3b82f6;
-        const w = typeInfo.width;
-        const l = typeInfo.length;
-
-        if (item.type === 'smart_board') {
-          const boardGeo = new THREE.BoxGeometry(w, 1.3, 0.08);
-          const boardMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
-          const board = new THREE.Mesh(boardGeo, boardMat);
-          board.position.y = 1.4;
-          const screenGeo = new THREE.PlaneGeometry(w - 0.2, 1.1);
-          const screenMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-          const screen = new THREE.Mesh(screenGeo, screenMat);
-          screen.position.set(0, 1.4, 0.05);
-          group.add(board);
-          group.add(screen);
-        } else if (item.type === 'beanbag') {
-          const bagGeo = new THREE.SphereGeometry(w / 2, 16, 16);
-          const bagMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.8 });
-          const bag = new THREE.Mesh(bagGeo, bagMat);
-          bag.scale.set(1, 0.5, 1);
-          bag.position.y = 0.25;
-          group.add(bag);
-        } else {
-          const isStanding = (item.type === 'standing_desk');
-          const tableHeight = isStanding ? 1.05 : 0.75;
-          const legHeight = isStanding ? 1.0 : 0.75;
-
-          const topGeo = new THREE.BoxGeometry(w, 0.08, l);
-          const topMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.4 });
-          const top = new THREE.Mesh(topGeo, topMat);
-          top.position.y = tableHeight;
-          group.add(top);
-
-          const legGeo = new THREE.CylinderGeometry(0.03, 0.03, legHeight);
-          const legMat = new THREE.MeshStandardMaterial({ color: 0x64748b });
-          const legX = w / 2 - 0.08;
-          const legZ = l / 2 - 0.08;
-          [[-legX, -legZ], [legX, -legZ], [-legX, legZ], [legX, legZ]].forEach(([lx, lz]) => {
-            const leg = new THREE.Mesh(legGeo, legMat);
-            leg.position.set(lx, legHeight / 2, lz);
-            group.add(leg);
-          });
-        }
-        tempScene.add(group);
-      });
-
-      tempRenderer.render(tempScene, tempCamera);
-      const dataUrl = offCanvas.toDataURL('image/png');
-      tempRenderer.dispose();
-      return dataUrl;
-    }
-
-    function printLayout() {
-      printFullReport();
-    }
-
-    function export3DImage() {
-      if (!renderer3D) return;
-
-      // Ensure frame is rendered
-      renderer3D.render(scene3D, camera3D);
-      const dataUrl = renderer3D.domElement.toDataURL('image/png');
-
-      const link = document.createElement('a');
-      link.download = `3D_Classroom_View_${Date.now()}.png`;
-      link.href = dataUrl;
-      link.click();
-    }
-
-    // --- 3D Scene WebGL Rendering Engine ---
-    let scene3D, camera3D, renderer3D, animationFrameId, resizeObserver3D;
-
-    function open3DModal() {
-      const modal = document.getElementById('modal3D');
-      if (!modal) return;
-      modal.classList.remove('hidden');
-      
-      const loadingEl = document.getElementById('loading3D');
-      if (loadingEl) loadingEl.classList.remove('hidden');
-      
-      requestAnimationFrame(() => {
-        setTimeout(() => {
-          init3DScene();
-          if (loadingEl) loadingEl.classList.add('hidden');
-        }, 150);
-      });
-    }
-
-    function close3DModal() {
-      const modal = document.getElementById('modal3D');
-      if (modal) modal.classList.add('hidden');
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-      if (resizeObserver3D) resizeObserver3D.disconnect();
-    }
-
-    function reset3DCamera(viewType = 'persp') {
-      if (!camera3D) return;
-
-      if (viewType === 'top') {
-        camera3D.position.set(roomWidth / 2, Math.max(roomWidth, roomLength) * 1.4, roomLength / 2 + 0.01);
-      } else {
-        camera3D.position.set(roomWidth / 2, Math.max(roomWidth, roomLength) * 1.1, roomLength * 1.3);
-      }
-      camera3D.lookAt(roomWidth / 2, 0, roomLength / 2);
-    }
-
-    // Generate dynamic procedural wood floor texture
-    function createWoodFloorTexture() {
-      const texCanvas = document.createElement('canvas');
-      texCanvas.width = 512;
-      texCanvas.height = 512;
-      const tCtx = texCanvas.getContext('2d');
-
-      tCtx.fillStyle = '#1e293b';
-      tCtx.fillRect(0, 0, 512, 512);
-
-      tCtx.strokeStyle = '#334155';
-      tCtx.lineWidth = 4;
-      const plankHeight = 32;
-
-      for (let y = 0; y <= 512; y += plankHeight) {
-        tCtx.beginPath();
-        tCtx.moveTo(0, y);
-        tCtx.lineTo(512, y);
-        tCtx.stroke();
-      }
-
-      const texture = new THREE.CanvasTexture(texCanvas);
-      texture.wrapS = THREE.RepeatWrapping;
-      texture.wrapT = THREE.RepeatWrapping;
-      texture.repeat.set(roomWidth / 2, roomLength / 2);
-      return texture;
-    }
-
-    function init3DScene() {
-      const container = document.getElementById('canvas3DContainer');
-      if (!container) return;
-
-      const existingCanvas = container.querySelector('canvas');
-      if (existingCanvas) existingCanvas.remove();
-
-      const width = container.clientWidth || 800;
-      const height = container.clientHeight || 500;
-
-      scene3D = new THREE.Scene();
-      scene3D.background = new THREE.Color(0x0b0f19);
-
-      camera3D = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-      reset3DCamera('persp');
-
-      renderer3D = new THREE.WebGLRenderer({ antialias: true });
-      renderer3D.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-      renderer3D.setSize(width, height);
-      renderer3D.shadowMap.enabled = true;
-      renderer3D.shadowMap.type = THREE.PCFSoftShadowMap;
-      container.appendChild(renderer3D.domElement);
-
-      // Lighting
-      const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-      scene3D.add(ambientLight);
-
-      const dirLight = new THREE.DirectionalLight(0xfff7ed, 0.9);
-      dirLight.position.set(roomWidth * 0.5, 12, roomLength * 0.5);
-      dirLight.castShadow = true;
-      dirLight.shadow.mapSize.width = 1024;
-      dirLight.shadow.mapSize.height = 1024;
-      scene3D.add(dirLight);
-
-      // Floor Plane with Wood Texture
-      const floorGeo = new THREE.PlaneGeometry(roomWidth, roomLength);
-      const floorMat = new THREE.MeshStandardMaterial({
-        map: createWoodFloorTexture(),
-        roughness: 0.5,
-        metalness: 0.1
-      });
-      const floor = new THREE.Mesh(floorGeo, floorMat);
-      floor.rotation.x = -Math.PI / 2;
-      floor.position.set(roomWidth / 2, 0, roomLength / 2);
-      floor.receiveShadow = true;
-      scene3D.add(floor);
-
-      // Grid helper
-      const grid = new THREE.GridHelper(Math.max(roomWidth, roomLength) * 1.4, 20, 0x6366f1, 0x334155);
-      grid.position.set(roomWidth / 2, 0.01, roomLength / 2);
-      scene3D.add(grid);
-
-      // Construct Furniture Meshes
-      furnitureItems.forEach(item => {
-        const typeInfo = furnitureTypes[item.type] || { width: 1, length: 1, color: '#3b82f6' };
-        const group = new THREE.Group();
-        group.position.set(item.x, 0, item.y);
-        group.rotation.y = -(item.rotation || 0) * (Math.PI / 180);
-
-        let meshColor = item.color || typeInfo.color || '#3b82f6';
-        let colorHex = parseInt(meshColor.replace('#', '0x')) || 0x3b82f6;
-
-        const w = typeInfo.width;
-        const l = typeInfo.length;
-
-        if (item.type === 'smart_board') {
-          // Interactive Smart Screen with bezel
-          const boardGeo = new THREE.BoxGeometry(w, 1.3, 0.08);
-          const boardMat = new THREE.MeshStandardMaterial({ color: 0x0f172a });
-          const board = new THREE.Mesh(boardGeo, boardMat);
-          board.position.y = 1.4;
-
-          const screenGeo = new THREE.PlaneGeometry(w - 0.2, 1.1);
-          const screenMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
-          const screen = new THREE.Mesh(screenGeo, screenMat);
-          screen.position.set(0, 1.4, 0.05);
-
-          group.add(board);
-          group.add(screen);
-        } else if (item.type === 'beanbag') {
-          const bagGeo = new THREE.SphereGeometry(w / 2, 16, 16);
-          const bagMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.8 });
-          const bag = new THREE.Mesh(bagGeo, bagMat);
-          bag.scale.set(1, 0.5, 1);
-          bag.position.y = 0.25;
-          group.add(bag);
-        } else {
-          // Desks, Tables & Chairs
-          const isStanding = (item.type === 'standing_desk');
-          const tableHeight = isStanding ? 1.05 : 0.75;
-          const legHeight = isStanding ? 1.0 : 0.75;
-
-          const topGeo = new THREE.BoxGeometry(w, 0.08, l);
-          const topMat = new THREE.MeshStandardMaterial({ color: colorHex, roughness: 0.4 });
-          const top = new THREE.Mesh(topGeo, topMat);
-          top.position.y = tableHeight;
-          top.castShadow = true;
-          group.add(top);
-
-          // Table Legs
-          const legGeo = new THREE.CylinderGeometry(0.03, 0.03, legHeight);
-          const legMat = new THREE.MeshStandardMaterial({ color: 0x64748b });
-          const legX = w / 2 - 0.08;
-          const legZ = l / 2 - 0.08;
-
-          [[-legX, -legZ], [legX, -legZ], [-legX, legZ], [legX, legZ]].forEach(([lx, lz]) => {
-            const leg = new THREE.Mesh(legGeo, legMat);
-            leg.position.set(lx, legHeight / 2, lz);
-            group.add(leg);
-          });
-        }
-
-        scene3D.add(group);
-      });
-
-      // Orbit interaction controls
-      let isDragging3D = false;
-      let prevMousePos = { x: 0, y: 0 };
-      const dom = renderer3D.domElement;
-
-      dom.onmousedown = (e) => {
-        isDragging3D = true;
-        prevMousePos = { x: e.clientX, y: e.clientY };
-      };
-
-      dom.onmousemove = (e) => {
-        if (!isDragging3D) return;
-        const deltaX = e.clientX - prevMousePos.x;
-        const deltaY = e.clientY - prevMousePos.y;
-
-        camera3D.position.x -= deltaX * 0.02;
-        camera3D.position.y = Math.max(1.0, camera3D.position.y + deltaY * 0.02);
-        camera3D.lookAt(roomWidth / 2, 0, roomLength / 2);
-
-        prevMousePos = { x: e.clientX, y: e.clientY };
-      };
-
-      dom.onwheel = (e) => {
-        e.preventDefault();
-        camera3D.position.y = Math.max(2.0, Math.min(25.0, camera3D.position.y + e.deltaY * 0.01));
-        camera3D.lookAt(roomWidth / 2, 0, roomLength / 2);
-      };
-
-      window.onmouseup = () => { isDragging3D = false; };
-
-      function animate3D() {
-        animationFrameId = requestAnimationFrame(animate3D);
-        renderer3D.render(scene3D, camera3D);
-      }
-      animate3D();
-    }
-
-    async function analyzeLayoutWithAI() {
-      const modal = document.getElementById('modalAI');
-      const content = document.getElementById('aiResultContent');
-      modal.classList.remove('hidden');
-
-      const dict = i18n[currentLang] || i18n.en;
-
-      content.innerHTML = `
-        <div class="flex flex-col items-center justify-center py-12 space-y-3 text-teal-400">
-          <i class="fa-solid fa-circle-notch fa-spin text-3xl"></i>
-          <p class="font-medium text-slate-300">${dict.modal_ai_loading}</p>
-        </div>
+    grand.totalL += rL; grand.totalP += rP;
+    grand.pL += rPL; grand.pP += rPP;
+    grand.aL += rAL; grand.aP += rAP;
+
+    const total = rL + rP;
+    const rate = total > 0 ? (((rPL + rPP) / total) * 100).toFixed(2) + "%" : "-";
+    data.push({ cls: cls.name, rL, rP, rPL, rPP, rAL, rAP, catatan: rAbsentNos.join(', '), rate });
+  });
+
+  return { data, grand, absentList };
+}
+
+/* ============================================================
+   打印
+   ============================================================ */
+function printReport(mode) {
+  document.body.classList.remove('print-desktop', 'print-mobile');
+  document.body.classList.add(`print-${mode}`);
+
+  const { data, grand, absentList } = computeLogData();
+
+  if (mode === 'desktop') {
+    const dtTbody = $("printTableBodyDt");
+    if (dtTbody) {
+      dtTbody.innerHTML = data.map(d => `
+        <tr>
+          <td>${esc(d.cls)}</td><td>${d.rL}</td><td>${d.rP}</td>
+          <td>${d.rPL}</td><td>${d.rPP}</td>
+          <td>${d.rAL}</td><td>${d.rAP}</td>
+          <td style="font-size:10px">${esc(d.catatan)}</td>
+          <td style="font-weight:bold">${d.rate}</td>
+        </tr>
+      `).join("");
+      dtTbody.innerHTML += `
+        <tr style="font-weight:bold;background:#eee">
+          <td>${t('total_label')}</td><td>${grand.totalL}</td><td>${grand.totalP}</td>
+          <td>${grand.pL}</td><td>${grand.pP}</td><td>${grand.aL}</td><td>${grand.aP}</td><td></td><td></td>
+        </tr>
       `;
+    }
+    if ($("printGlobalTotalDt")) $("printGlobalTotalDt").innerText = grand.totalL + grand.totalP;
+    if ($("printGlobalPresentDt")) $("printGlobalPresentDt").innerText = grand.pL + grand.pP;
+    if ($("printGlobalAbsentDt")) $("printGlobalAbsentDt").innerText = grand.aL + grand.aP;
+    if ($("printGlobalPercentDt")) $("printGlobalPercentDt").innerText = ((grand.pL+grand.pP)/(grand.totalL+grand.totalP)*100 || 0).toFixed(2) + "%";
+    if ($("printAbsentListBodyDt")) {
+      $("printAbsentListBodyDt").innerHTML = absentList.length === 0
+        ? `<tr><td colspan="4" style="text-align:center">${t('all_present_msg')}</td></tr>`
+        : absentList.map(a => `<tr><td>${esc(a.cls)}</td><td>${a.no}</td><td>${esc(a.name)}</td><td>${esc(a.gender)}</td></tr>`).join("");
+    }
+  } else {
+    const mbTbody = $("printTableBodyMb");
+    if (mbTbody) {
+      mbTbody.innerHTML = data.map(d => `
+        <tr>
+          <td>${esc(d.cls)}</td>
+          <td><span class="lp-merge">L:</span>${d.rL} <span class="lp-merge">P:</span>${d.rP}</td>
+          <td><span class="lp-merge">L:</span>${d.rPL} <span class="lp-merge">P:</span>${d.rPP}</td>
+          <td><span class="lp-merge">L:</span>${d.rAL} <span class="lp-merge">P:</span>${d.rAP}</td>
+          <td style="font-weight:bold">${d.rate}</td>
+        </tr>
+      `).join("");
+      mbTbody.innerHTML += `
+        <tr style="font-weight:bold;background:#eee">
+          <td>${t('total_label')}</td>
+          <td><span class="lp-merge">L:</span>${grand.totalL} <span class="lp-merge">P:</span>${grand.totalP}</td>
+          <td><span class="lp-merge">L:</span>${grand.pL} <span class="lp-merge">P:</span>${grand.pP}</td>
+          <td><span class="lp-merge">L:</span>${grand.aL} <span class="lp-merge">P:</span>${grand.aP}</td>
+          <td>${((grand.pL+grand.pP)/(grand.totalL+grand.totalP)*100 || 0).toFixed(2)}%</td>
+        </tr>
+      `;
+    }
+    if ($("printGlobalTotalMb")) $("printGlobalTotalMb").innerText = grand.totalL + grand.totalP;
+    if ($("printGlobalPresentMb")) $("printGlobalPresentMb").innerText = grand.pL + grand.pP;
+    if ($("printGlobalAbsentMb")) $("printGlobalAbsentMb").innerText = grand.aL + grand.aP;
+    if ($("printGlobalPercentMb")) $("printGlobalPercentMb").innerText = ((grand.pL+grand.pP)/(grand.totalL+grand.totalP)*100 || 0).toFixed(2) + "%";
+    if ($("printAbsentListBodyMb")) {
+      $("printAbsentListBodyMb").innerHTML = absentList.length === 0
+        ? `<tr><td colspan="3" style="text-align:center">${t('all_present_msg')}</td></tr>`
+        : absentList.map(a => `<tr><td>${esc(a.cls)}</td><td>${esc(a.name)}</td><td>${esc(a.gender)}</td></tr>`).join("");
+    }
+  }
 
-      const summaryList = furnitureItems.map(i => {
-        const typeInfo = furnitureTypes[i.type];
-        const localizedName = typeInfo ? ((typeof typeInfo.name === 'object') ? (typeInfo.name[currentLang] || typeInfo.name.en) : typeInfo.name) : i.type;
-        return `${localizedName} (${i.x.toFixed(1)}m, ${i.y.toFixed(1)}m)`;
-      }).join(', ');
+  setTimeout(() => window.print(), 100);
+}
 
-      const langNames = {
-        zh: 'Simplified Chinese (简体中文)',
-        en: 'English',
-        ms: 'Bahasa Melayu'
-      };
-      const targetLangName = langNames[currentLang] || 'Simplified Chinese';
+/* ============================================================
+   备份 / 恢复
+   ============================================================ */
+async function backupData() {
+  if (currentRole !== "admin") { alert("仅管理员可备份。"); return; }
+  try {
+    const { data: allClasses, error: cErr } = await supabaseClient.from("classes").select("id,name").order("name");
+    if (cErr) { alert("读取班级失败：" + cErr.message); return; }
 
-      const systemPrompt = `You are an expert educational spatial consultant specializing in PAK-21 (21st Century Learning). Provide a structured, helpful, concise assessment detailing overall score (/100), key strengths, traffic flow analysis, and 3 actionable PAK-21 pedagogical tips based on the classroom layout provided.
+    const { data: allStudents, error: sErr } = await supabaseClient
+      .from("students")
+      .select("id,class_id,student_no,name,gender,active")
+      .order("class_id").order("student_no");
+    if (sErr) { alert("读取学生失败：" + sErr.message); return; }
 
-CRITICAL REQUIREMENT: You MUST generate your ENTIRE response in ${targetLangName}. Do NOT output in any other language.`;
+    const { data: allAttendance, error: aErr } = await supabaseClient
+      .from("attendance_records")
+      .select("student_id,attendance_date,present")
+      .order("attendance_date");
+    if (aErr) { alert("读取出席记录失败：" + aErr.message); return; }
 
-      const userQuery = `Classroom Dimensions: ${roomWidth}m x ${roomLength}m. Target Student Capacity: ${targetCapacity} students. Current seats on canvas: ${summaryList || 'None'}. Evaluate layout for collaborative learning, capacity match against target (${targetCapacity} students), teacher sightlines, and mobility in ${targetLangName}.`;
+    const backup = {
+      exported_at: new Date().toISOString(),
+      school_settings: schoolSettings,
+      classes: allClasses || [],
+      students: allStudents || [],
+      attendance_records: allAttendance || []
+    };
 
-      const apiKey = ""; // Canvas runtime auto-injects key
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`;
+    const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `school_backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    showStatus("appStatus", `已导出备份：${(allClasses||[]).length} 个班级、${(allStudents||[]).length} 位学生、${(allAttendance||[]).length} 条出席记录。`, "ok");
+  } catch (err) {
+    alert("备份失败：" + err.message);
+  }
+}
 
-      try {
-        const response = await fetch(apiUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: userQuery }] }],
-            systemInstruction: { parts: [{ text: systemPrompt }] }
-          })
-        });
+async function restoreData(event) {
+  if (currentRole !== "admin") { event.target.value = ""; return; }
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.classes || !data.students) {
+        alert(t('invalid_backup'));
+        return;
+      }
+      if (!confirm(t('restore_confirm'))) return;
 
-        const data = await response.json();
-        const responseText = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+      if (data.school_settings) {
+        schoolSettings = data.school_settings;
+        localStorage.setItem('schoolSettings', JSON.stringify(schoolSettings));
+        applySchoolSettings();
+      }
 
-        if (responseText) {
-          content.innerHTML = `
-            <div class="prose prose-invert max-w-none text-slate-200 text-sm space-y-3">
-              <div class="p-3 bg-teal-950/40 border border-teal-500/30 rounded-xl flex items-center space-x-3 mb-4">
-                <i class="fa-solid fa-circle-check text-teal-400 text-xl"></i>
-                <div>
-                  <h4 class="font-bold text-teal-200">${dict.modal_ai_success_title}</h4>
-                  <p class="text-xs text-slate-300">${dict.modal_ai_success_sub}</p>
-                </div>
-              </div>
-              <div class="whitespace-pre-line leading-relaxed">${responseText}</div>
-            </div>
-          `;
-        } else {
-          content.innerHTML = `<p class="text-rose-400">${dict.modal_ai_error}</p>`;
+      for (const c of data.classes) {
+        const { data: existing } = await supabaseClient.from("classes").select("id").eq("name", c.name).maybeSingle();
+        if (!existing) {
+          await supabaseClient.from("classes").insert({ name: c.name });
         }
-      } catch (err) {
-        content.innerHTML = `<p class="text-rose-400">${dict.modal_ai_error}: ${err.message}</p>`;
+      }
+      await loadClasses();
+
+      const nameToId = {};
+      classes.forEach(c => nameToId[c.name] = c.id);
+      const classIdMap = {};
+      for (const c of (data.classes || [])) {
+        const found = classes.find(x => x.name === c.name);
+        if (found) classIdMap[c.id] = found.id;
+      }
+
+      for (const s of (data.students || [])) {
+        const targetClassId = classIdMap[s.class_id] || nameToId[s.class_name];
+        if (!targetClassId) continue;
+        const { data: existing } = await supabaseClient
+          .from("students")
+          .select("id")
+          .eq("class_id", targetClassId)
+          .eq("name", s.name)
+          .maybeSingle();
+        if (!existing) {
+          await supabaseClient.from("students").insert({
+            class_id: targetClassId,
+            student_no: s.student_no,
+            name: s.name,
+            gender: s.gender,
+            active: s.active !== false
+          });
+        }
+      }
+
+      const { data: freshStudents } = await supabaseClient
+        .from("students")
+        .select("id,class_id,student_no,name");
+      const freshMap = {};
+      (freshStudents || []).forEach(s => {
+        const cls = classes.find(c => c.id === s.class_id);
+        if (cls) freshMap[`${cls.name}|${s.name}`] = s.id;
+      });
+
+      for (const r of (data.attendance_records || [])) {
+        const oldS = (data.students || []).find(x => x.id === r.student_id);
+        if (!oldS) continue;
+        const oldC = (data.classes || []).find(x => x.id === oldS.class_id);
+        if (!oldC) continue;
+        const newStudentId = freshMap[`${oldC.name}|${oldS.name}`];
+        if (!newStudentId) continue;
+        await supabaseClient.from("attendance_records").upsert({
+          student_id: newStudentId,
+          attendance_date: r.attendance_date,
+          present: r.present
+        }, { onConflict: "student_id,attendance_date" });
+      }
+
+      alert(t('backup_restored'));
+      await loadClasses();
+      if (currentRole === "admin") await loadAdminGlobalData();
+      renderAllViews();
+      if (currentRole === "admin") {
+        renderClassManageList();
+        renderStudentManageList();
+        renderTeacherManageList();
+      }
+    } catch (err) {
+      alert("恢复失败：" + err.message);
+    } finally {
+      event.target.value = "";
+    }
+  };
+  reader.readAsText(file, "UTF-8");
+}
+
+/* ============================================================
+   系统管理（管理员）
+   ============================================================ */
+function openManageModal(type) {
+  if (currentRole !== "admin") return;
+  if (type === 'school') {
+    $("manageSchoolModal").style.display = "flex";
+    $("schoolNameInput").value = schoolSettings.name || "";
+    renderClassManageList();
+    updateClassDropdowns();
+    renderTeacherManageList();
+    loadTeachers().then(() => renderAssignmentChoices());
+  } else {
+    $("manageStudentModal").style.display = "flex";
+    updateClassDropdowns();
+    renderClassManageList();
+    renderStudentManageList();
+  }
+}
+function closeManageModal() {
+  $("manageSchoolModal").style.display = "none";
+  $("manageStudentModal").style.display = "none";
+}
+
+function renderClassManageList() {
+  const list = $("classManageList");
+  if (!list) return;
+  const sorted = [...classes].sort((a, b) => a.name.localeCompare(b.name));
+  list.innerHTML = sorted.map(c => {
+    const count = (c.id === selectedClassId) ? students.length : 0;
+    return `<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid var(--border);font-size:14px">
+      <span><strong>${esc(c.name)}</strong> (${count})</span>
+      <div>
+        <button onclick="renameClass('${c.id}')" style="color:var(--info);border:none;background:none;cursor:pointer;padding:2px 8px;font-weight:600">改名</button>
+        <button onclick="deleteClass('${c.id}')" style="color:var(--danger);border:none;background:none;cursor:pointer;padding:2px 8px;font-weight:600">删除</button>
+      </div>
+    </div>`;
+  }).join("") || `<p class="muted" style="padding:12px;text-align:center">暂无班级</p>`;
+}
+
+async function addClass() {
+  if (currentRole !== "admin") return;
+  const name = $("newClassName").value.trim().toUpperCase();
+  if (!name) return alert("请输入班级名称");
+  const { error } = await supabaseClient.from("classes").insert({ name });
+  if (error) { alert("新增班级失败：" + error.message); return; }
+  $("newClassName").value = "";
+  await loadClasses();
+  await loadAdminGlobalData();
+  renderClassManageList();
+  renderStudentManageList();
+  renderAllViews();
+}
+
+async function renameClass(id) {
+  if (currentRole !== "admin") return;
+  const cls = classes.find(c => c.id === id);
+  if (!cls) return;
+  const newName = prompt("新班级名称：", cls.name);
+  if (!newName || newName.trim().toUpperCase() === cls.name) return;
+  const { error } = await supabaseClient.from("classes").update({ name: newName.trim().toUpperCase() }).eq("id", id);
+  if (error) { alert("改名失败：" + error.message); return; }
+  await loadClasses();
+  await loadAdminGlobalData();
+  renderClassManageList();
+  renderStudentManageList();
+  renderAllViews();
+}
+
+async function deleteClass(id) {
+  if (currentRole !== "admin") return;
+  const cls = classes.find(c => c.id === id);
+  if (!cls) return;
+  if (!confirm(`确定删除班级 ${cls.name}？该班级学生和出席记录也会因数据库关联规则一并删除。`)) return;
+  const { error } = await supabaseClient.from("classes").delete().eq("id", id);
+  if (error) { alert("删除失败：" + error.message); return; }
+  if (selectedClassId === id) selectedClassId = null;
+  await loadClasses();
+  await loadAdminGlobalData();
+  renderClassManageList();
+  renderStudentManageList();
+  renderAllViews();
+}
+
+async function renderStudentManageList() {
+  const cls = $("manageClassSelect")?.value;
+  const list = $("studentManageList");
+  if (!list) return;
+  if (!cls) { list.innerHTML = `<p class="muted" style="padding:12px;text-align:center">请先选择班级</p>`; return; }
+
+  const { data, error } = await supabaseClient
+    .from("students")
+    .select("id,student_no,name,gender,active")
+    .eq("class_id", cls)
+    .order("student_no");
+  if (error) { list.innerHTML = `<p class="muted" style="padding:12px;text-align:center">读取学生名单失败：${esc(error.message)}</p>`; return; }
+
+  list.innerHTML = (data || []).map(s => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid var(--border);font-size:14px;gap:8px;flex-wrap:wrap">
+      <span style="flex:1;min-width:120px">#${s.student_no} ${esc(s.name)} (${esc(s.gender)})</span>
+      <div style="display:flex;gap:4px;flex-wrap:wrap">
+        <button onclick="editStudentInline('${s.id}')" style="color:var(--info);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:600">编辑</button>
+        <button onclick="moveStudentInline('${s.id}')" style="color:var(--secondary);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:600">调班</button>
+        <button onclick="deleteStudent('${s.id}','${esc(s.name)}')" style="color:var(--danger);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:600">删除</button>
+      </div>
+    </div>
+  `).join("") || `<p class="muted" style="padding:12px;text-align:center">暂无学生</p>`;
+}
+
+/* ---------- 教师账号管理 ---------- */
+async function renderTeacherManageList() {
+  const list = $("teacherManageList");
+  if (!list) return;
+  const { data, error } = await supabaseClient
+    .from("user_roles")
+    .select("user_id,email,role")
+    .eq("role", "teacher")
+    .order("email");
+  if (error) { list.innerHTML = `<p class="muted" style="padding:12px;text-align:center">读取教师失败：${esc(error.message)}</p>`; return; }
+  teachers = data || [];
+  if (!teachers.length) {
+    list.innerHTML = `<p class="muted" style="padding:12px;text-align:center">${t('teacher_no_list')}</p>`;
+    return;
+  }
+  list.innerHTML = teachers.map(t => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid var(--border);font-size:13px;gap:8px;flex-wrap:wrap">
+      <span style="flex:1;min-width:140px">${esc(t.email || t.user_id)}</span>
+      <button onclick="deleteTeacherRole('${t.user_id}')" style="color:var(--danger);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:600">删除角色</button>
+    </div>
+  `).join("");
+}
+
+async function addTeacher() {
+  if (currentRole !== "admin") return;
+  const email = $("newTeacherEmail").value.trim().toLowerCase();
+  const password = $("newTeacherPassword").value.trim();
+  if (!email) return alert("请输入教师邮箱");
+  if (!password || password.length < 6) return alert("初始密码至少 6 位");
+
+  // 检查是否已存在
+  const { data: existing, error: existErr } = await supabaseClient
+    .from("user_roles")
+    .select("user_id")
+    .eq("email", email)
+    .maybeSingle();
+  if (existErr) { alert("检查邮箱失败：" + existErr.message); return; }
+  if (existing) { alert(t('teacher_exists')); return; }
+
+  try {
+    // 1) 创建 Auth 用户
+    const { data: authData, error: authErr } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: { email_confirm: true }
+    });
+    if (authErr) {
+      alert("创建账号失败：" + authErr.message);
+      return;
+    }
+    const newUserId = authData.user?.id;
+    if (!newUserId) {
+      alert("创建账号失败：未返回用户 ID。");
+      return;
+    }
+
+    // 2) 写入 user_roles
+    const { error: roleErr } = await supabaseClient.from("user_roles").insert({
+      user_id: newUserId,
+      email,
+      role: "teacher"
+    });
+    if (roleErr) {
+      alert("写入教师角色失败：" + roleErr.message);
+      return;
+    }
+
+    // 3) 恢复管理员会话
+    await supabaseClient.auth.signInWithPassword({
+      email: currentUser.email,
+      password: prompt("请重新输入管理员密码以恢复会话：", "")
+    });
+
+    alert(t('teacher_added'));
+    $("newTeacherEmail").value = "";
+    $("newTeacherPassword").value = "";
+    renderTeacherManageList();
+    await loadTeachers();
+    renderAssignmentChoices();
+  } catch (err) {
+    alert("添加教师失败：" + err.message);
+  }
+}
+
+async function deleteTeacherRole(userId) {
+  if (currentRole !== "admin") return;
+  if (!confirm(t('delete_teacher_confirm'))) return;
+  const { error } = await supabaseClient.from("user_roles").delete().eq("user_id", userId);
+  if (error) { alert("删除失败：" + error.message); return; }
+  alert(t('teacher_deleted'));
+  renderTeacherManageList();
+  await loadTeachers();
+  renderAssignmentChoices();
+}
+
+/* ---------- 教师班级分配 ---------- */
+async function renderAssignmentChoices() {
+  if (currentRole !== "admin") return;
+  const teacherSelect = $("teacherSelect");
+  const choicesDiv = $("assignmentChoices");
+  if (!teacherSelect || !choicesDiv) return;
+
+  // 重新填充教师下拉框，保留当前选中
+  const curVal = teacherSelect.value;
+  teacherSelect.innerHTML = teachers.length
+    ? teachers.map(t => `<option value="${t.user_id}">${esc(t.email || t.user_id)}</option>`).join("")
+    : `<option value="">${t('no_teachers_for_assignment')}</option>`;
+  
+  if (curVal && teachers.some(t => t.user_id === curVal)) {
+    teacherSelect.value = curVal;
+  } else if (teachers.length) {
+    teacherSelect.value = teachers[0].user_id;
+  }
+
+  const teacherId = teacherSelect.value;
+  if (!teacherId) {
+    choicesDiv.innerHTML = `<p class="muted" style="grid-column:span 2;text-align:center;padding:10px;">${t('no_teachers_for_assignment')}</p>`;
+    return;
+  }
+
+  // 读取该教师当前分配的班级
+  const { data: assigned, error } = await supabaseClient.from("class_assignments").select("class_id").eq("teacher_id", teacherId);
+  if (error) {
+    choicesDiv.innerHTML = `<p class="muted" style="grid-column:span 2;text-align:center;padding:10px;">读取分配失败：${esc(error.message)}</p>`;
+    return;
+  }
+  const assignedIds = new Set((assigned || []).map(x => x.class_id));
+
+  if (!classes.length) {
+    choicesDiv.innerHTML = `<p class="muted" style="grid-column:span 2;text-align:center;padding:10px;">${t('no_classes_for_assignment')}</p>`;
+    return;
+  }
+
+  choicesDiv.innerHTML = [...classes].sort((a,b)=>a.name.localeCompare(b.name)).map(c => `
+    <label style="display:flex;gap:8px;align-items:center;padding:6px 10px;background:#fff;border:1px solid var(--border);border-radius:6px;font-size:13px;cursor:pointer">
+      <input style="width:auto;min-height:auto;margin:0" type="checkbox" value="${c.id}" ${assignedIds.has(c.id) ? "checked" : ""}>
+      ${esc(c.name)}
+    </label>
+  `).join("");
+}
+
+async function saveAssignments() {
+  if (currentRole !== "admin") return;
+  const teacherId = $("teacherSelect").value;
+  if (!teacherId) return alert(t('select_teacher_first'));
+
+  const chosen = [...$("assignmentChoices").querySelectorAll('input[type="checkbox"]:checked')].map(x => x.value);
+  const { error: delError } = await supabaseClient.from("class_assignments").delete().eq("teacher_id", teacherId);
+  if (delError) { alert("更新分配失败：" + delError.message); return; }
+
+  if (chosen.length) {
+    const rows = chosen.map(class_id => ({ class_id, teacher_id: teacherId }));
+    const { error } = await supabaseClient.from("class_assignments").insert(rows);
+    if (error) { alert("保存分配失败：" + error.message); return; }
+  }
+  alert(t('assignment_saved'));
+}
+
+/* ---------- 编辑学生姓名 ---------- */
+async function editStudentInline(id) {
+  if (currentRole !== "admin") return;
+  const { data: s, error } = await supabaseClient.from("students").select("id,name,gender,class_id").eq("id", id).maybeSingle();
+  if (error || !s) { alert("读取学生失败。"); return; }
+
+  const newName = prompt("学生姓名：", s.name);
+  if (newName === null) return;
+  const trimmed = newName.trim();
+  if (!trimmed) { alert("姓名不能为空。"); return; }
+
+  const newGender = prompt("性别 (L/P)：", s.gender);
+  if (newGender === null) return;
+  const g = newGender.trim().toUpperCase();
+  if (g !== "L" && g !== "P") { alert("性别只能是 L 或 P。"); return; }
+
+  const { error: uErr } = await supabaseClient.from("students").update({ name: trimmed, gender: g }).eq("id", id);
+  if (uErr) { alert("更新失败：" + uErr.message); return; }
+
+  if (s.class_id === selectedClassId) {
+    await loadStudents();
+    await loadAttendance();
+  }
+  if (currentRole === "admin") await loadAdminGlobalData();
+  renderAllViews();
+  renderStudentManageList();
+}
+
+/* ---------- 调整学生班级 ---------- */
+async function moveStudentInline(id) {
+  if (currentRole !== "admin") return;
+  const { data: s, error } = await supabaseClient.from("students").select("id,name,class_id,student_no").eq("id", id).maybeSingle();
+  if (error || !s) { alert("读取学生失败。"); return; }
+
+  const options = classes.filter(c => c.id !== s.class_id).sort((a, b) => a.name.localeCompare(b.name));
+  if (!options.length) { alert("没有其他班级可供调班。"); return; }
+
+  const listText = options.map((c, i) => `${i + 1}. ${c.name}`).join("\n");
+  const choice = prompt(`将 ${s.name} 调至哪个班级？\n${listText}\n请输入编号：`);
+  if (choice === null) return;
+  const idx = parseInt(choice, 10) - 1;
+  if (isNaN(idx) || idx < 0 || idx >= options.length) { alert("无效编号。"); return; }
+
+  const target = options[idx];
+
+  const { data: last, error: lErr } = await supabaseClient
+    .from("students")
+    .select("student_no")
+    .eq("class_id", target.id)
+    .order("student_no", { ascending: false })
+    .limit(1);
+  if (lErr) { alert("读取目标班级编号失败：" + lErr.message); return; }
+  const nextNo = (last && last.length ? last[0].student_no : 0) + 1;
+
+  const { error: uErr } = await supabaseClient
+    .from("students")
+    .update({ class_id: target.id, student_no: nextNo })
+    .eq("id", id);
+  if (uErr) { alert("调班失败：" + uErr.message); return; }
+
+  alert(`✅ ${s.name} 已调至 ${target.name}（编号 #${nextNo}）。`);
+
+  if (currentRole === "admin") await loadAdminGlobalData();
+  if (s.class_id === selectedClassId || target.id === selectedClassId) {
+    if (currentRole !== "admin") {
+      await loadStudents();
+      await loadAttendance();
+    }
+    renderAllViews();
+  }
+  renderStudentManageList();
+  renderClassManageList();
+}
+
+async function addStudent() {
+  if (currentRole !== "admin") return;
+  const cls = $("manageClassSelect").value;
+  const name = $("newName").value.trim();
+  const gender = $("newGender").value;
+  if (!name) return alert("请输入学生姓名");
+  if (!cls) return alert("请先选择班级");
+
+  const { data: existing, error: readErr } = await supabaseClient
+    .from("students")
+    .select("student_no")
+    .eq("class_id", cls)
+    .order("student_no", { ascending: false })
+    .limit(1);
+  if (readErr) { alert("读取编号失败：" + readErr.message); return; }
+  const nextNo = (existing && existing.length ? existing[0].student_no : 0) + 1;
+
+  const { error } = await supabaseClient.from("students").insert({ class_id: cls, student_no: nextNo, name, gender });
+  if (error) { alert("新增学生失败：" + error.message); return; }
+  $("newName").value = "";
+  
+  if (currentRole === "admin") await loadAdminGlobalData();
+  if (cls === selectedClassId && currentRole !== "admin") {
+    await loadStudents();
+    await loadAttendance();
+  }
+  renderAllViews();
+  renderStudentManageList();
+}
+
+async function deleteStudent(id, name) {
+  if (currentRole !== "admin") return;
+  if (!confirm(`确定删除学生 ${name}？其出席记录也会一并删除。`)) return;
+  const { error } = await supabaseClient.from("students").delete().eq("id", id);
+  if (error) { alert("删除失败：" + error.message); return; }
+  
+  if (currentRole === "admin") await loadAdminGlobalData();
+  else {
+    await loadStudents();
+    await loadAttendance();
+  }
+  renderAllViews();
+  renderStudentManageList();
+}
+
+async function reorderStudentNumbers() {
+  if (currentRole !== "admin") return;
+  const cls = $("manageClassSelect").value;
+  if (!cls) return;
+
+  const { data, error } = await supabaseClient
+    .from("students")
+    .select("id,student_no")
+    .eq("class_id", cls)
+    .order("student_no");
+  if (error) { alert("读取学生失败：" + error.message); return; }
+  if (!data || !data.length) return;
+
+  for (let i = 0; i < data.length; i++) {
+    if (data[i].student_no !== i + 1) {
+      await supabaseClient.from("students").update({ student_no: i + 1 }).eq("id", data[i].id);
+    }
+  }
+  if (currentRole === "admin") await loadAdminGlobalData();
+  if (cls === selectedClassId && currentRole !== "admin") {
+    await loadStudents();
+    await loadAttendance();
+  }
+  renderAllViews();
+  renderStudentManageList();
+}
+
+/* ============================================================
+   CSV 导入/导出
+   ============================================================ */
+function downloadAllStudentsTemplate() {
+  const csvContent = "Class,Name,Gender\n1M,张三,L\n1M,李四,P\n2M,王五,L\n";
+  const blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `student_template.csv`;
+  a.click();
+}
+
+async function importAllStudentsCSV(event) {
+  if (currentRole !== "admin") return;
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async function(e) {
+    const lines = e.target.result.split(/\r?\n/);
+    let count = 0;
+    let classCache = {};
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      const parts = line.split(',');
+      if (parts.length >= 3) {
+        const clsName = parts[0].trim().toUpperCase();
+        const name = parts[1].trim();
+        const gender = parts[2].trim().toUpperCase();
+        if (!clsName || !name || (gender !== 'L' && gender !== 'P')) continue;
+
+        let clsId = classCache[clsName];
+        if (!clsId) {
+          const existing = classes.find(c => c.name.toUpperCase() === clsName);
+          if (existing) {
+            clsId = existing.id;
+          } else {
+            const { data, error } = await supabaseClient.from("classes").insert({ name: clsName }).select("id").single();
+            if (error) continue;
+            clsId = data.id;
+            classes.push({ id: clsId, name: clsName });
+          }
+          classCache[clsName] = clsId;
+        }
+
+        const { data: noData } = await supabaseClient
+          .from("students")
+          .select("student_no")
+          .eq("class_id", clsId)
+          .order("student_no", { ascending: false })
+          .limit(1);
+        const nextNo = (noData && noData.length ? noData[0].student_no : 0) + 1;
+
+        await supabaseClient.from("students").insert({ class_id: clsId, student_no: nextNo, name, gender });
+        count++;
       }
     }
 
-    function closeAIModal() {
-      document.getElementById('modalAI').classList.add('hidden');
+    if (count > 0) {
+      alert(`✅ 已导入 ${count} 位学生。`);
+      await loadClasses();
+      await loadAdminGlobalData();
+      renderClassManageList();
+      renderStudentManageList();
+      renderAllViews();
+    } else {
+      alert("导入失败，请检查 CSV 格式。");
     }
-  </script>
+  };
+  reader.readAsText(file, "UTF-8");
+  event.target.value = '';
+}
+
+/* ============================================================
+   教师账号加载
+   ============================================================ */
+async function loadAdminData() {
+  await loadTeachers();
+  renderClassManageList();
+  renderStudentManageList();
+  renderTeacherManageList();
+}
+
+async function loadTeachers() {
+  if (currentRole !== "admin") return;
+  const { data, error } = await supabaseClient
+    .from("user_roles")
+    .select("user_id,email,role")
+    .eq("role", "teacher")
+    .order("email");
+  if (error) { showStatus("appStatus", "读取教师账号失败：" + error.message, "error"); return; }
+  teachers = data || [];
+}
+
+/* ============================================================
+   启动
+   ============================================================ */
+init();
+</script>
 </body>
 </html>
