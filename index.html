@@ -233,6 +233,30 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
 .btn-outline{background:#fff;color:var(--ink);border:1px solid var(--border)}
 .btn-outline:hover{background:#f8fafc}
 
+/* 修复移动端 Dashboard 的排版，刚好一页 */
+@media(max-width:767px){
+  #dashboardModal .modal-content { padding: 16px; max-height: 95vh; }
+  #dashboardModal .modal-header { margin-bottom: 12px; padding-bottom: 12px; }
+  #dashboardModal .modal-header h3 { font-size: 16px; }
+  
+  .dash-kpi-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; margin-bottom: 16px !important; }
+  .dash-kpi-card { padding: 10px !important; border-radius: 6px !important; }
+  .dash-kpi-card > div:first-child { font-size: 12px !important; margin-bottom: 4px !important; }
+  .dash-kpi-card > div:last-child { font-size: 20px !important; }
+  
+  .dash-section-title { font-size: 14px !important; margin-bottom: 10px !important; }
+  
+  #dash_class_bars { gap: 8px !important; margin-bottom: 16px !important; max-height: 220px !important; }
+  #dash_class_bars > div { gap: 8px !important; font-size: 12px !important; }
+  #dash_class_bars > div > div:first-child { width: 40px !important; }
+  #dash_class_bars > div > div:last-child { width: 50px !important; }
+  #dash_class_bars .bar-track { height: 14px !important; }
+  #dash_class_bars .bar-track > span { line-height: 14px !important; font-size: 10px !important; }
+  
+  #dash_absent_list { max-height: 150px !important; padding: 8px !important; }
+  #dash_absent_list > div { padding: 6px !important; font-size: 12px !important; }
+}
+
 /* ========== 打印 ========== */
 @media print{
   @page{size:portrait;margin:10mm}
@@ -357,10 +381,10 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
         <button class="btn-action btn-restore" onclick="document.getElementById('globalRestoreInput').click()" data-i18n="btn_restore">📂 恢复数据</button>
       </div>
       
-      <!-- 新增：全校仪表盘按钮 -->
+      <!-- 全校仪表盘按钮 -->
       <div class="batch-buttons">
-        <button class="btn-action" onclick="openDashboardModal()" style="background:#0ea5e9;color:white;grid-column:span 2;">
-          📊 全校仪表盘 Dashboard
+        <button class="btn-action" onclick="openDashboardModal()" style="background:#0ea5e9;color:white;grid-column:span 2;" data-i18n="btn_dashboard">
+          📊 全校仪表盘
         </button>
       </div>
 
@@ -441,8 +465,8 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
       </div>
       
       <div style="margin-top:16px">
-        <button onclick="openDashboardModal()" style="width:100%;padding:14px;background:#0ea5e9;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;box-shadow:0 2px 4px rgba(14,165,233,0.2)">
-          📊 全校仪表盘 Dashboard
+        <button onclick="openDashboardModal()" style="width:100%;padding:14px;background:#0ea5e9;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;box-shadow:0 2px 4px rgba(14,165,233,0.2)" data-i18n="btn_dashboard">
+          📊 全校仪表盘
         </button>
       </div>
     </div>
@@ -579,42 +603,42 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
   </div>
 </div>
 
-<!-- ========== 弹窗：全校仪表盘 Dashboard ========== -->
+<!-- ========== 弹窗：全校仪表盘 ========== -->
 <div id="dashboardModal" class="modal-overlay">
   <div class="modal-content" style="max-width:800px">
     <div class="modal-header">
-      <h3>📊 全校出席仪表盘 Dashboard</h3>
+      <h3 data-i18n="dash_title">📊 全校出席仪表盘 Dashboard</h3>
       <button class="close-btn" onclick="closeDashboardModal()">×</button>
     </div>
 
     <!-- 核心指标卡 -->
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
-      <div style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center">
-        <div style="font-size:13px;color:var(--muted);margin-bottom:8px">总人数</div>
+    <div class="dash-kpi-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
+      <div class="dash-kpi-card" style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:13px;color:var(--muted);margin-bottom:8px" data-i18n="dash_total_lbl">总人数</div>
         <div id="dash_total" style="font-size:24px;font-weight:700;color:var(--primary)">-</div>
       </div>
-      <div style="background:var(--success-light);border:1px solid #a7f3d0;border-radius:8px;padding:16px;text-align:center">
-        <div style="font-size:13px;color:var(--success);margin-bottom:8px">出席人数</div>
+      <div class="dash-kpi-card" style="background:var(--success-light);border:1px solid #a7f3d0;border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:13px;color:var(--success);margin-bottom:8px" data-i18n="dash_present_lbl">出席人数</div>
         <div id="dash_present" style="font-size:24px;font-weight:700;color:var(--success)">-</div>
       </div>
-      <div style="background:var(--danger-light);border:1px solid #fecaca;border-radius:8px;padding:16px;text-align:center">
-        <div style="font-size:13px;color:var(--danger);margin-bottom:8px">缺席人数</div>
+      <div class="dash-kpi-card" style="background:var(--danger-light);border:1px solid #fecaca;border-radius:8px;padding:16px;text-align:center">
+        <div style="font-size:13px;color:var(--danger);margin-bottom:8px" data-i18n="dash_absent_lbl">缺席人数</div>
         <div id="dash_absent" style="font-size:24px;font-weight:700;color:var(--danger)">-</div>
       </div>
-      <div style="background:var(--info);border:1px solid var(--info-hover);border-radius:8px;padding:16px;text-align:center;color:white">
-        <div style="font-size:13px;opacity:.9;margin-bottom:8px">整体出席率</div>
+      <div class="dash-kpi-card" style="background:var(--info);border:1px solid var(--info-hover);border-radius:8px;padding:16px;text-align:center;color:white">
+        <div style="font-size:13px;opacity:.9;margin-bottom:8px" data-i18n="dash_rate_lbl">整体出席率</div>
         <div id="dash_rate" style="font-size:24px;font-weight:700">-</div>
       </div>
     </div>
 
     <!-- 班级出席率对比图 -->
-    <h4 style="margin:0 0 16px 0;font-size:15px;color:var(--ink)">各班级出席率概览</h4>
+    <h4 class="dash-section-title" style="margin:0 0 16px 0;font-size:15px;color:var(--ink)" data-i18n="dash_class_rate_lbl">各班级出席率概览</h4>
     <div id="dash_class_bars" style="display:flex;flex-direction:column;gap:12px;margin-bottom:24px;max-height:300px;overflow-y:auto;padding-right:8px">
       <!-- 由 JS 动态生成进度条 -->
     </div>
 
     <!-- 全校缺席监控名单 -->
-    <h4 style="margin:0 0 12px 0;font-size:15px;color:var(--danger)">🚨 全校缺席名单监控</h4>
+    <h4 class="dash-section-title" style="margin:0 0 12px 0;font-size:15px;color:var(--danger)" data-i18n="dash_absent_title">🚨 全校缺席名单监控</h4>
     <div id="dash_absent_list" style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;max-height:200px;overflow-y:auto;padding:12px">
       <!-- 由 JS 动态生成 -->
     </div>
@@ -684,6 +708,13 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
       <select id="manageClassSelect" onchange="renderStudentManageList()" style="flex:1;padding:10px;border:1px solid #cbd5e1;border-radius:6px;min-height:auto"></select>
       <button onclick="reorderStudentNumbers()" style="background:#fff;color:var(--ink);border:1px solid var(--border);padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:500" data-i18n="btn_reorder">重排</button>
     </div>
+    
+    <!-- 批量操作：升级与毕业 -->
+    <div style="display:flex;gap:10px;margin-bottom:12px">
+      <button onclick="promoteClass()" style="flex:1;background:var(--warning);color:white;border:none;padding:10px;border-radius:6px;cursor:pointer;font-weight:500" data-i18n="btn_promote">🎓 升级班级 (Naik Kelas)</button>
+      <button onclick="graduateClass()" style="flex:1;background:var(--secondary);color:white;border:none;padding:10px;border-radius:6px;cursor:pointer;font-weight:500" data-i18n="btn_graduate">🎉 毕业 (Tamat Transisi)</button>
+    </div>
+
     <div style="display:flex;gap:10px;margin-bottom:12px">
       <input type="text" id="newName" placeholder="学生姓名" style="flex:1;padding:10px;border:1px solid #cbd5e1;border-radius:6px;min-height:auto">
       <select id="newGender" style="width:70px;padding:10px;border:1px solid #cbd5e1;border-radius:6px;min-height:auto">
@@ -692,6 +723,13 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
       </select>
       <button onclick="addStudent()" style="background:var(--success);color:white;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:500" data-i18n="btn_add">添加</button>
     </div>
+    
+    <!-- 显示非活跃学生开关 -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:13px">
+      <input type="checkbox" id="showInactive" onchange="renderStudentManageList()" style="width:auto;min-height:auto;margin:0">
+      <label for="showInactive" style="cursor:pointer;color:var(--muted)" data-i18n="show_inactive_lbl">显示已毕业/非活跃学生</label>
+    </div>
+
     <div id="studentManageList" style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;margin-bottom:20px"></div>
 
     <!-- CSV 导入 -->
@@ -779,6 +817,9 @@ const i18n = {
     manage_students: "👨‍🎓 学生管理",
     btn_add: "添加",
     btn_reorder: "重排",
+    btn_promote: "🎓 升级班级 (Naik Kelas)",
+    btn_graduate: "🎉 毕业 (Tamat Transisi)",
+    show_inactive_lbl: "显示已毕业/非活跃学生",
     days: ['星期日','星期一','星期二','星期三','星期四','星期五','星期六'],
     students_count: "人",
     th_total_label: "在籍",
@@ -811,7 +852,16 @@ const i18n = {
     assignment_saved: "✅ 教师班级分配已保存。",
     no_teachers_for_assignment: "请先在 Supabase 后台建立教师账号。",
     no_classes_for_assignment: "请先建立班级。",
-    select_teacher_first: "请先选择教师账号。"
+    select_teacher_first: "请先选择教师账号。",
+    btn_dashboard: "📊 全校仪表盘",
+    dash_title: "📊 全校出席仪表盘 Dashboard",
+    dash_total_lbl: "总人数",
+    dash_present_lbl: "出席人数",
+    dash_absent_lbl: "缺席人数",
+    dash_rate_lbl: "整体出席率",
+    dash_class_rate_lbl: "各班级出席率概览",
+    dash_absent_title: "🚨 全校缺席名单监控",
+    dash_all_present: "🎉 今日全员出席"
   },
   en: {
     app_title: "School Attendance & Log System",
@@ -869,6 +919,9 @@ const i18n = {
     manage_students: "👨‍🎓 Manage Students",
     btn_add: "Add",
     btn_reorder: "Reorder",
+    btn_promote: "🎓 Promote Class (Naik Kelas)",
+    btn_graduate: "🎉 Graduate (Tamat Transisi)",
+    show_inactive_lbl: "Show graduated/inactive students",
     days: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
     students_count: "students",
     th_total_label: "Enrolled",
@@ -901,7 +954,16 @@ const i18n = {
     assignment_saved: "✅ Teacher class assignments saved.",
     no_teachers_for_assignment: "Please create teacher accounts in Supabase first.",
     no_classes_for_assignment: "Please create classes first.",
-    select_teacher_first: "Please select a teacher account first."
+    select_teacher_first: "Please select a teacher account first.",
+    btn_dashboard: "📊 School Dashboard",
+    dash_title: "📊 School Attendance Dashboard",
+    dash_total_lbl: "Total",
+    dash_present_lbl: "Present",
+    dash_absent_lbl: "Absent",
+    dash_rate_lbl: "Overall Rate",
+    dash_class_rate_lbl: "Class Attendance Overview",
+    dash_absent_title: "🚨 Absentee Monitoring",
+    dash_all_present: "🎉 All present today"
   },
   ms: {
     app_title: "Sistem Kehadiran & Log Sekolah",
@@ -959,6 +1021,9 @@ const i18n = {
     manage_students: "👨‍🎓 Urus Pelajar",
     btn_add: "Tambah",
     btn_reorder: "Susun",
+    btn_promote: "🎓 Naik Kelas",
+    btn_graduate: "🎉 Tamat Transisi",
+    show_inactive_lbl: "Tunjuk pelajar tamat/inaktif",
     days: ['Ahad','Isnin','Selasa','Rabu','Khamis','Jumaat','Sabtu'],
     students_count: "pelajar",
     th_total_label: "Keramaian",
@@ -991,7 +1056,16 @@ const i18n = {
     assignment_saved: "✅ Penetapan kelas guru disimpan.",
     no_teachers_for_assignment: "Sila cipta akaun guru di Supabase terlebih dahulu.",
     no_classes_for_assignment: "Sila cipta kelas terlebih dahulu.",
-    select_teacher_first: "Sila pilih akaun guru terlebih dahulu."
+    select_teacher_first: "Sila pilih akaun guru terlebih dahulu.",
+    btn_dashboard: "📊 Papan Pemuka Dashboard",
+    dash_title: "📊 Papan Pemuka Kehadiran",
+    dash_total_lbl: "Jumlah",
+    dash_present_lbl: "Hadir",
+    dash_absent_lbl: "Tidak Hadir",
+    dash_rate_lbl: "Kadar Keseluruhan",
+    dash_class_rate_lbl: "Gambaran Kehadiran Kelas",
+    dash_absent_title: "🚨 Pemantauan Tidak Hadir",
+    dash_all_present: "🎉 Semua hadir hari ini"
   }
 };
 
@@ -2002,23 +2076,93 @@ async function renderStudentManageList() {
   if (!list) return;
   if (!cls) { list.innerHTML = `<p class="muted" style="padding:12px;text-align:center">请先选择班级</p>`; return; }
 
-  const { data, error } = await supabaseClient
+  const showInactive = $("showInactive").checked;
+  let query = supabaseClient
     .from("students")
     .select("id,student_no,name,gender,active")
     .eq("class_id", cls)
     .order("student_no");
+    
+  if (!showInactive) {
+    query = query.eq("active", true);
+  }
+
+  const { data, error } = await query;
   if (error) { list.innerHTML = `<p class="muted" style="padding:12px;text-align:center">读取学生名单失败：${esc(error.message)}</p>`; return; }
 
-  list.innerHTML = (data || []).map(s => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid var(--border);font-size:14px;gap:8px;flex-wrap:wrap">
-      <span style="flex:1;min-width:120px">#${s.student_no} ${esc(s.name)} (${esc(s.gender)})</span>
+  list.innerHTML = (data || []).map(s => {
+    const opacity = s.active ? 1 : 0.5;
+    const statusLbl = s.active ? '' : ' (Tamat)';
+    return `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid var(--border);font-size:14px;gap:8px;flex-wrap:wrap;opacity:${opacity}">
+      <span style="flex:1;min-width:120px">#${s.student_no} ${esc(s.name)} (${esc(s.gender)}) ${statusLbl}</span>
       <div style="display:flex;gap:4px;flex-wrap:wrap">
         <button onclick="editStudentInline('${s.id}')" style="color:var(--info);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:500;box-shadow:none;">编辑</button>
         <button onclick="moveStudentInline('${s.id}')" style="color:var(--secondary);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:500;box-shadow:none;">调班</button>
         <button onclick="deleteStudent('${s.id}','${esc(s.name)}')" style="color:var(--danger);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:500;box-shadow:none;">删除</button>
       </div>
     </div>
-  `).join("") || `<p class="muted" style="padding:12px;text-align:center">暂无学生</p>`;
+  `}).join("") || `<p class="muted" style="padding:12px;text-align:center">暂无学生</p>`;
+}
+
+/* ---------- 批量操作：升级与毕业 ---------- */
+async function promoteClass() {
+  if (currentRole !== "admin") return;
+  const clsId = $("manageClassSelect").value;
+  if (!clsId) return alert("请先选择要升级的班级");
+  
+  const targetClass = prompt("请输入要升入的目标班级名称（例如：2M）：");
+  if (!targetClass || !targetClass.trim()) return;
+  const formattedTarget = targetClass.trim().toUpperCase();
+  
+  // 查找或创建目标班级
+  let targetCls = classes.find(c => c.name === formattedTarget);
+  if (!targetCls) {
+    if (!confirm(`目标班级 ${formattedTarget} 不存在，是否自动创建？`)) return;
+    const { data, error } = await supabaseClient.from("classes").insert({ name: formattedTarget }).select("id").single();
+    if (error) { alert("创建目标班级失败：" + error.message); return; }
+    targetCls = { id: data.id, name: formattedTarget };
+    classes.push(targetCls);
+  }
+
+  if (!confirm(`确定将当前班级的所有【活跃】学生升级（移动）到 ${formattedTarget} 吗？`)) return;
+
+  const { error } = await supabaseClient
+    .from("students")
+    .update({ class_id: targetCls.id })
+    .eq("class_id", clsId)
+    .eq("active", true);
+
+  if (error) { alert("升级失败：" + error.message); return; }
+  
+  alert(`✅ 班级学生已成功升级至 ${formattedTarget}！`);
+  await loadClasses();
+  await loadAdminGlobalData();
+  renderClassManageList();
+  renderStudentManageList();
+  renderAllViews();
+}
+
+async function graduateClass() {
+  if (currentRole !== "admin") return;
+  const clsId = $("manageClassSelect").value;
+  if (!clsId) return alert("请先选择要毕业的班级");
+  
+  const clsName = classes.find(c => c.id === clsId)?.name;
+  if (!confirm(`确定将 ${clsName} 班的所有学生标记为【已毕业 (Tamat Transisi)】吗？\n\n他们将从日常点名中消失，但历史记录仍会保留。`)) return;
+
+  const { error } = await supabaseClient
+    .from("students")
+    .update({ active: false })
+    .eq("class_id", clsId)
+    .eq("active", true);
+
+  if (error) { alert("毕业操作失败：" + error.message); return; }
+  
+  alert(`🎉 ${clsName} 班学生已成功毕业！`);
+  await loadAdminGlobalData();
+  renderStudentManageList();
+  renderAllViews();
 }
 
 /* ---------- 教师班级分配 ---------- */
@@ -2212,6 +2356,7 @@ async function reorderStudentNumbers() {
     .from("students")
     .select("id,student_no")
     .eq("class_id", cls)
+    .eq("active", true)
     .order("student_no");
   if (error) { alert("读取学生失败：" + error.message); return; }
   if (!data || !data.length) return;
@@ -2404,7 +2549,7 @@ function renderDashboard() {
         return `
           <div style="display:flex;align-items:center;gap:12px;font-size:13px">
             <div style="width:50px;font-weight:600;color:var(--secondary)">${esc(d.cls)}</div>
-            <div style="flex:1;background:#e2e8f0;border-radius:4px;height:16px;overflow:hidden;position:relative">
+            <div class="bar-track" style="flex:1;background:#e2e8f0;border-radius:4px;height:16px;overflow:hidden;position:relative">
               <div style="background:${barColor};height:100%;width:${cRateNum}%;transition:width 0.5s ease-out;border-radius:4px"></div>
               <span style="position:absolute;right:8px;top:0;line-height:16px;font-size:11px;color:#fff;font-weight:600;text-shadow:0 0 2px rgba(0,0,0,0.5)">${cRateNum.toFixed(1)}%</span>
             </div>
@@ -2419,7 +2564,7 @@ function renderDashboard() {
   const absListDiv = $("dash_absent_list");
   if (absListDiv) {
     if (!absentList.length) {
-      absListDiv.innerHTML = `<div style="color:var(--success);text-align:center;padding:20px;">🎉 今日全员出席</div>`;
+      absListDiv.innerHTML = `<div style="color:var(--success);text-align:center;padding:20px;">${t('dash_all_present')}</div>`;
     } else {
       absListDiv.innerHTML = absentList.map(a => `
         <div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #e2e8f0;font-size:13px">
