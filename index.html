@@ -384,7 +384,7 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
       <!-- 全校仪表盘按钮 -->
       <div class="batch-buttons">
         <button class="btn-action" onclick="openDashboardModal()" style="background:#0ea5e9;color:white;grid-column:span 2;" data-i18n="btn_dashboard">
-          📊 全校仪表盘
+          📊 全校仪表盘 Dashboard
         </button>
       </div>
 
@@ -466,7 +466,7 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
       
       <div style="margin-top:16px">
         <button onclick="openDashboardModal()" style="width:100%;padding:14px;background:#0ea5e9;color:white;border:none;border-radius:8px;font-size:15px;font-weight:600;box-shadow:0 2px 4px rgba(14,165,233,0.2)" data-i18n="btn_dashboard">
-          📊 全校仪表盘
+          📊 全校仪表盘 Dashboard
         </button>
       </div>
     </div>
@@ -603,11 +603,11 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
   </div>
 </div>
 
-<!-- ========== 弹窗：全校仪表盘 ========== -->
+<!-- ========== 弹窗：全校仪表盘 Dashboard ========== -->
 <div id="dashboardModal" class="modal-overlay">
   <div class="modal-content" style="max-width:800px">
     <div class="modal-header">
-      <h3 data-i18n="dash_title">📊 全校出席仪表盘</h3>
+      <h3 data-i18n="dash_title">📊 全校出席仪表盘 Dashboard</h3>
       <button class="close-btn" onclick="closeDashboardModal()">×</button>
     </div>
 
@@ -854,7 +854,7 @@ const i18n = {
     no_teachers_for_assignment: "请先在 Supabase 后台建立教师账号。",
     no_classes_for_assignment: "请先建立班级。",
     select_teacher_first: "请先选择教师账号。",
-    btn_dashboard: "📊 全校仪表盘",
+    btn_dashboard: "📊 全校仪表盘 Dashboard",
     dash_title: "📊 全校出席仪表盘 Dashboard",
     dash_total_lbl: "总人数",
     dash_present_lbl: "出席人数",
@@ -864,7 +864,49 @@ const i18n = {
     dash_absent_title: "🚨 全校缺席名单监控",
     dash_all_present: "🎉 今日全员出席",
     ph_new_class: "新班级名称",
-    ph_student_name: "学生姓名"
+    ph_student_name: "学生姓名",
+    
+    // 动态按钮与弹窗提示
+    btn_edit_name: "改名",
+    btn_delete: "删除",
+    btn_edit: "编辑",
+    no_class_yet: "暂无班级",
+    no_student_yet: "暂无学生",
+    prompt_new_class_name: "新班级名称：",
+    prompt_student_name: "学生姓名：",
+    prompt_gender: "性别 (L/P)：",
+    prompt_promote_target: "请输入要升入的目标班级名称（例如：2M）：",
+    confirm_create_class: "目标班级 {name} 不存在，是否自动创建？",
+    confirm_promote: "确定将当前班级的所有【活跃】学生升级（移动）到 {name} 吗？",
+    confirm_graduate: "确定将 {name} 班的所有学生标记为【已毕业 (Tamat Transisi)】吗？\n\n他们将从日常点名中消失，但历史记录仍会保留。",
+    status_graduated: "(已毕业)",
+    err_enter_class_name: "请输入班级名称",
+    err_add_class_fail: "新增班级失败：",
+    err_rename_class_fail: "改名失败：",
+    err_delete_class_fail: "删除失败：",
+    err_read_student_fail: "读取学生名单失败：",
+    err_select_class_for_promote: "请先选择要升级的班级",
+    err_select_class_for_graduate: "请先选择要毕业的班级",
+    err_create_target_class_fail: "创建目标班级失败：",
+    err_promote_fail: "升级失败：",
+    success_promote: "✅ 班级学生已成功升级至 {name}！",
+    err_graduate_fail: "毕业操作失败：",
+    success_graduate: "🎉 {name} 班学生已成功毕业！",
+    prompt_move_to_class: "将 {name} 调至哪个班级？\n{list}\n请输入编号：",
+    err_invalid_num: "无效编号。",
+    err_read_target_no: "读取目标班级编号失败：",
+    err_move_fail: "调班失败：",
+    success_move: "✅ {name} 已调至 {target}（编号 #{no}）。",
+    err_enter_student_name: "请输入学生姓名",
+    err_select_class_first: "请先选择班级",
+    err_read_no_fail: "读取编号失败：",
+    err_add_student_fail: "新增学生失败：",
+    confirm_delete_student: "确定删除学生 {name}？其出席记录也会一并删除。",
+    err_delete_student_fail: "删除失败：",
+    err_read_student_data_fail: "读取学生失败。",
+    err_name_empty: "姓名不能为空。",
+    err_gender_only: "性别只能是 L 或 P。",
+    err_update_fail: "更新失败："
   },
   en: {
     app_title: "School Attendance & Log System",
@@ -969,7 +1011,48 @@ const i18n = {
     dash_absent_title: "🚨 Absentee Monitoring",
     dash_all_present: "🎉 All present today",
     ph_new_class: "New class name",
-    ph_student_name: "Student name"
+    ph_student_name: "Student name",
+
+    btn_edit_name: "Rename",
+    btn_delete: "Delete",
+    btn_edit: "Edit",
+    no_class_yet: "No classes yet",
+    no_student_yet: "No students yet",
+    prompt_new_class_name: "New class name:",
+    prompt_student_name: "Student name:",
+    prompt_gender: "Gender (L/P):",
+    prompt_promote_target: "Enter target class name to promote to (e.g., 2M):",
+    confirm_create_class: "Target class {name} does not exist. Create it automatically?",
+    confirm_promote: "Move all active students to {name}?",
+    confirm_graduate: "Mark all students in {name} as Graduated?\n\nThey will disappear from daily attendance but historical records will remain.",
+    status_graduated: "(Graduated)",
+    err_enter_class_name: "Please enter class name",
+    err_add_class_fail: "Failed to add class: ",
+    err_rename_class_fail: "Failed to rename: ",
+    err_delete_class_fail: "Failed to delete: ",
+    err_read_student_fail: "Failed to read students: ",
+    err_select_class_for_promote: "Please select a class to promote first",
+    err_select_class_for_graduate: "Please select a class to graduate first",
+    err_create_target_class_fail: "Failed to create target class: ",
+    err_promote_fail: "Failed to promote: ",
+    success_promote: "✅ Students promoted to {name} successfully!",
+    err_graduate_fail: "Failed to graduate: ",
+    success_graduate: "🎉 Students in {name} graduated successfully!",
+    prompt_move_to_class: "Move {name} to which class?\n{list}\nEnter number:",
+    err_invalid_num: "Invalid number.",
+    err_read_target_no: "Failed to read target class no: ",
+    err_move_fail: "Failed to move: ",
+    success_move: "✅ {name} moved to {target} (No. #{no}).",
+    err_enter_student_name: "Please enter student name",
+    err_select_class_first: "Please select a class first",
+    err_read_no_fail: "Failed to read student no: ",
+    err_add_student_fail: "Failed to add student: ",
+    confirm_delete_student: "Delete student {name}? Attendance records will also be deleted.",
+    err_delete_student_fail: "Failed to delete: ",
+    err_read_student_data_fail: "Failed to read student data.",
+    err_name_empty: "Name cannot be empty.",
+    err_gender_only: "Gender must be L or P.",
+    err_update_fail: "Update failed: "
   },
   ms: {
     app_title: "Sistem Kehadiran & Log Sekolah",
@@ -1074,7 +1157,48 @@ const i18n = {
     dash_absent_title: "🚨 Pemantauan Tidak Hadir",
     dash_all_present: "🎉 Semua hadir hari ini",
     ph_new_class: "Nama kelas baru",
-    ph_student_name: "Nama pelajar"
+    ph_student_name: "Nama pelajar",
+
+    btn_edit_name: "Tukar Nama",
+    btn_delete: "Padam",
+    btn_edit: "Edit",
+    no_class_yet: "Tiada kelas lagi",
+    no_student_yet: "Tiada pelajar lagi",
+    prompt_new_class_name: "Nama kelas baru:",
+    prompt_student_name: "Nama pelajar:",
+    prompt_gender: "Jantina (L/P):",
+    prompt_promote_target: "Masukkan nama kelas sasaran untuk naik kelas (cth: 2M):",
+    confirm_create_class: "Kelas sasaran {name} tidak wujud. Cipta secara automatik?",
+    confirm_promote: "Pindahkan semua pelajar aktif ke {name}?",
+    confirm_graduate: "Tanda semua pelajar dalam {name} sebagai Tamat Transisi?\n\nMereka akan hilang dari kehadiran harian tetapi rekod sejarah akan kekal.",
+    status_graduated: "(Tamat)",
+    err_enter_class_name: "Sila masukkan nama kelas",
+    err_add_class_fail: "Gagal tambah kelas: ",
+    err_rename_class_fail: "Gagal tukar nama: ",
+    err_delete_class_fail: "Gagal padam: ",
+    err_read_student_fail: "Gagal baca senarai pelajar: ",
+    err_select_class_for_promote: "Sila pilih kelas untuk naik kelas",
+    err_select_class_for_graduate: "Sila pilih kelas untuk tamat",
+    err_create_target_class_fail: "Gagal cipta kelas sasaran: ",
+    err_promote_fail: "Gagal naik kelas: ",
+    success_promote: "✅ Pelajar berjaya naik ke {name}!",
+    err_graduate_fail: "Gagal tamatkan: ",
+    success_graduate: "🎉 Pelajar dalam {name} berjaya tamat!",
+    prompt_move_to_class: "Pindah {name} ke kelas mana?\n{list}\nMasukkan nombor:",
+    err_invalid_num: "Nombor tidak sah.",
+    err_read_target_no: "Gagal baca no kelas sasaran: ",
+    err_move_fail: "Gagal pindah: ",
+    success_move: "✅ {name} dipindah ke {target} (No. #{no}).",
+    err_enter_student_name: "Sila masukkan nama pelajar",
+    err_select_class_first: "Sila pilih kelas dahulu",
+    err_read_no_fail: "Gagal baca no pelajar: ",
+    err_add_student_fail: "Gagal tambah pelajar: ",
+    confirm_delete_student: "Padam pelajar {name}? Rekod kehadiran juga akan dipadam.",
+    err_delete_student_fail: "Gagal padam: ",
+    err_read_student_data_fail: "Gagal baca data pelajar.",
+    err_name_empty: "Nama tidak boleh kosong.",
+    err_gender_only: "Jantina mesti L atau P.",
+    err_update_fail: "Gagal kemas kini: "
   }
 };
 
@@ -1125,6 +1249,17 @@ function selectedDate() {
 function selectedClass() { return classes.find(c => c.id === selectedClassId) || null; }
 function statusFor(studentId) { return attendance.has(studentId) ? attendance.get(studentId) : true; }
 function t(key) { return i18n[currentLang][key] || key; }
+
+// 格式化字符串：替换 {name} 等占位符
+function tFormat(key, vars) {
+  let str = t(key);
+  if (vars) {
+    for (const k in vars) {
+      str = str.replace(new RegExp(`\\{${k}\\}`, 'g'), vars[k]);
+    }
+  }
+  return str;
+}
 
 /* ============================================================
    学校设置（名称 + 校徽）
@@ -2036,7 +2171,7 @@ function renderClassManageList() {
         <button onclick="deleteClass('${c.id}')" style="color:var(--danger);border:none;background:none;cursor:pointer;padding:2px 8px;font-weight:500;box-shadow:none;" data-i18n="btn_delete">删除</button>
       </div>
     </div>`;
-  }).join("") || `<p class="muted" style="padding:12px;text-align:center">暂无班级</p>`;
+  }).join("") || `<p class="muted" style="padding:12px;text-align:center">${t('no_class_yet')}</p>`;
   // 重新翻译动态生成的按钮
   list.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
@@ -2047,9 +2182,9 @@ function renderClassManageList() {
 async function addClass() {
   if (currentRole !== "admin") return;
   const name = $("newClassName").value.trim().toUpperCase();
-  if (!name) return alert("请输入班级名称");
+  if (!name) return alert(t('err_enter_class_name'));
   const { error } = await supabaseClient.from("classes").insert({ name });
-  if (error) { alert("新增班级失败：" + error.message); return; }
+  if (error) { alert(t('err_add_class_fail') + error.message); return; }
   $("newClassName").value = "";
   await loadClasses();
   await loadAdminGlobalData();
@@ -2062,10 +2197,10 @@ async function renameClass(id) {
   if (currentRole !== "admin") return;
   const cls = classes.find(c => c.id === id);
   if (!cls) return;
-  const newName = prompt("新班级名称：", cls.name);
+  const newName = prompt(t('prompt_new_class_name'), cls.name);
   if (!newName || newName.trim().toUpperCase() === cls.name) return;
   const { error } = await supabaseClient.from("classes").update({ name: newName.trim().toUpperCase() }).eq("id", id);
-  if (error) { alert("改名失败：" + error.message); return; }
+  if (error) { alert(t('err_rename_class_fail') + error.message); return; }
   await loadClasses();
   await loadAdminGlobalData();
   renderClassManageList();
@@ -2077,9 +2212,9 @@ async function deleteClass(id) {
   if (currentRole !== "admin") return;
   const cls = classes.find(c => c.id === id);
   if (!cls) return;
-  if (!confirm(`确定删除班级 ${cls.name}？该班级学生和出席记录也会因数据库关联规则一并删除。`)) return;
+  if (!confirm(`${t('confirm_delete_student').replace('{name}', cls.name)}\n(Related students and attendance will also be deleted)`)) return;
   const { error } = await supabaseClient.from("classes").delete().eq("id", id);
-  if (error) { alert("删除失败：" + error.message); return; }
+  if (error) { alert(t('err_delete_class_fail') + error.message); return; }
   if (selectedClassId === id) selectedClassId = null;
   await loadClasses();
   await loadAdminGlobalData();
@@ -2092,7 +2227,7 @@ async function renderStudentManageList() {
   const cls = $("manageClassSelect")?.value;
   const list = $("studentManageList");
   if (!list) return;
-  if (!cls) { list.innerHTML = `<p class="muted" style="padding:12px;text-align:center">请先选择班级</p>`; return; }
+  if (!cls) { list.innerHTML = `<p class="muted" style="padding:12px;text-align:center">${t('err_select_class_first')}</p>`; return; }
 
   const showInactive = $("showInactive").checked;
   let query = supabaseClient
@@ -2106,11 +2241,11 @@ async function renderStudentManageList() {
   }
 
   const { data, error } = await query;
-  if (error) { list.innerHTML = `<p class="muted" style="padding:12px;text-align:center">读取学生名单失败：${esc(error.message)}</p>`; return; }
+  if (error) { list.innerHTML = `<p class="muted" style="padding:12px;text-align:center">${t('err_read_student_fail')}${esc(error.message)}</p>`; return; }
 
   list.innerHTML = (data || []).map(s => {
     const opacity = s.active ? 1 : 0.5;
-    const statusLbl = s.active ? '' : ' (Tamat)';
+    const statusLbl = s.active ? '' : ` (${t('status_graduated')})`;
     return `
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid var(--border);font-size:14px;gap:8px;flex-wrap:wrap;opacity:${opacity}">
       <span style="flex:1;min-width:120px">#${s.student_no} ${esc(s.name)} (${esc(s.gender)}) ${statusLbl}</span>
@@ -2120,7 +2255,7 @@ async function renderStudentManageList() {
         <button onclick="deleteStudent('${s.id}','${esc(s.name)}')" style="color:var(--danger);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:500;box-shadow:none;" data-i18n="btn_delete">删除</button>
       </div>
     </div>
-  `}).join("") || `<p class="muted" style="padding:12px;text-align:center">暂无学生</p>`;
+  `}).join("") || `<p class="muted" style="padding:12px;text-align:center">${t('no_student_yet')}</p>`;
 
   // 重新翻译动态生成的按钮
   list.querySelectorAll('[data-i18n]').forEach(el => {
@@ -2133,23 +2268,23 @@ async function renderStudentManageList() {
 async function promoteClass() {
   if (currentRole !== "admin") return;
   const clsId = $("manageClassSelect").value;
-  if (!clsId) return alert("请先选择要升级的班级");
+  if (!clsId) return alert(t('err_select_class_for_promote'));
   
-  const targetClass = prompt("请输入要升入的目标班级名称（例如：2M）：");
+  const targetClass = prompt(t('prompt_promote_target'));
   if (!targetClass || !targetClass.trim()) return;
   const formattedTarget = targetClass.trim().toUpperCase();
   
   // 查找或创建目标班级
   let targetCls = classes.find(c => c.name === formattedTarget);
   if (!targetCls) {
-    if (!confirm(`目标班级 ${formattedTarget} 不存在，是否自动创建？`)) return;
+    if (!confirm(tFormat('confirm_create_class', { name: formattedTarget }))) return;
     const { data, error } = await supabaseClient.from("classes").insert({ name: formattedTarget }).select("id").single();
-    if (error) { alert("创建目标班级失败：" + error.message); return; }
+    if (error) { alert(t('err_create_target_class_fail') + error.message); return; }
     targetCls = { id: data.id, name: formattedTarget };
     classes.push(targetCls);
   }
 
-  if (!confirm(`确定将当前班级的所有【活跃】学生升级（移动）到 ${formattedTarget} 吗？`)) return;
+  if (!confirm(tFormat('confirm_promote', { name: formattedTarget }))) return;
 
   const { error } = await supabaseClient
     .from("students")
@@ -2157,9 +2292,9 @@ async function promoteClass() {
     .eq("class_id", clsId)
     .eq("active", true);
 
-  if (error) { alert("升级失败：" + error.message); return; }
+  if (error) { alert(t('err_promote_fail') + error.message); return; }
   
-  alert(`✅ 班级学生已成功升级至 ${formattedTarget}！`);
+  alert(tFormat('success_promote', { name: formattedTarget }));
   await loadClasses();
   await loadAdminGlobalData();
   renderClassManageList();
@@ -2170,10 +2305,10 @@ async function promoteClass() {
 async function graduateClass() {
   if (currentRole !== "admin") return;
   const clsId = $("manageClassSelect").value;
-  if (!clsId) return alert("请先选择要毕业的班级");
+  if (!clsId) return alert(t('err_select_class_for_graduate'));
   
   const clsName = classes.find(c => c.id === clsId)?.name;
-  if (!confirm(`确定将 ${clsName} 班的所有学生标记为【已毕业 (Tamat Transisi)】吗？\n\n他们将从日常点名中消失，但历史记录仍会保留。`)) return;
+  if (!confirm(tFormat('confirm_graduate', { name: clsName }))) return;
 
   const { error } = await supabaseClient
     .from("students")
@@ -2181,9 +2316,9 @@ async function graduateClass() {
     .eq("class_id", clsId)
     .eq("active", true);
 
-  if (error) { alert("毕业操作失败：" + error.message); return; }
+  if (error) { alert(t('err_graduate_fail') + error.message); return; }
   
-  alert(`🎉 ${clsName} 班学生已成功毕业！`);
+  alert(tFormat('success_graduate', { name: clsName }));
   await loadAdminGlobalData();
   renderStudentManageList();
   renderAllViews();
@@ -2256,20 +2391,20 @@ async function saveAssignments() {
 async function editStudentInline(id) {
   if (currentRole !== "admin") return;
   const { data: s, error } = await supabaseClient.from("students").select("id,name,gender,class_id").eq("id", id).maybeSingle();
-  if (error || !s) { alert("读取学生失败。"); return; }
+  if (error || !s) { alert(t('err_read_student_data_fail')); return; }
 
-  const newName = prompt("学生姓名：", s.name);
+  const newName = prompt(t('prompt_student_name'), s.name);
   if (newName === null) return;
   const trimmed = newName.trim();
-  if (!trimmed) { alert("姓名不能为空。"); return; }
+  if (!trimmed) { alert(t('err_name_empty')); return; }
 
-  const newGender = prompt("性别 (L/P)：", s.gender);
+  const newGender = prompt(t('prompt_gender'), s.gender);
   if (newGender === null) return;
   const g = newGender.trim().toUpperCase();
-  if (g !== "L" && g !== "P") { alert("性别只能是 L 或 P。"); return; }
+  if (g !== "L" && g !== "P") { alert(t('err_gender_only')); return; }
 
   const { error: uErr } = await supabaseClient.from("students").update({ name: trimmed, gender: g }).eq("id", id);
-  if (uErr) { alert("更新失败：" + uErr.message); return; }
+  if (uErr) { alert(t('err_update_fail') + uErr.message); return; }
 
   if (s.class_id === selectedClassId) {
     await loadStudents();
@@ -2284,16 +2419,16 @@ async function editStudentInline(id) {
 async function moveStudentInline(id) {
   if (currentRole !== "admin") return;
   const { data: s, error } = await supabaseClient.from("students").select("id,name,class_id,student_no").eq("id", id).maybeSingle();
-  if (error || !s) { alert("读取学生失败。"); return; }
+  if (error || !s) { alert(t('err_read_student_data_fail')); return; }
 
   const options = classes.filter(c => c.id !== s.class_id).sort((a, b) => a.name.localeCompare(b.name));
   if (!options.length) { alert("没有其他班级可供调班。"); return; }
 
   const listText = options.map((c, i) => `${i + 1}. ${c.name}`).join("\n");
-  const choice = prompt(`将 ${s.name} 调至哪个班级？\n${listText}\n请输入编号：`);
+  const choice = prompt(tFormat('prompt_move_to_class', { name: s.name, list: listText }));
   if (choice === null) return;
   const idx = parseInt(choice, 10) - 1;
-  if (isNaN(idx) || idx < 0 || idx >= options.length) { alert("无效编号。"); return; }
+  if (isNaN(idx) || idx < 0 || idx >= options.length) { alert(t('err_invalid_num')); return; }
 
   const target = options[idx];
 
@@ -2303,16 +2438,16 @@ async function moveStudentInline(id) {
     .eq("class_id", target.id)
     .order("student_no", { ascending: false })
     .limit(1);
-  if (lErr) { alert("读取目标班级编号失败：" + lErr.message); return; }
+  if (lErr) { alert(t('err_read_target_no') + lErr.message); return; }
   const nextNo = (last && last.length ? last[0].student_no : 0) + 1;
 
   const { error: uErr } = await supabaseClient
     .from("students")
     .update({ class_id: target.id, student_no: nextNo })
     .eq("id", id);
-  if (uErr) { alert("调班失败：" + uErr.message); return; }
+  if (uErr) { alert(t('err_move_fail') + uErr.message); return; }
 
-  alert(`✅ ${s.name} 已调至 ${target.name}（编号 #${nextNo}）。`);
+  alert(tFormat('success_move', { name: s.name, target: target.name, no: nextNo }));
 
   if (currentRole === "admin") await loadAdminGlobalData();
   if (s.class_id === selectedClassId || target.id === selectedClassId) {
@@ -2331,8 +2466,8 @@ async function addStudent() {
   const cls = $("manageClassSelect").value;
   const name = $("newName").value.trim();
   const gender = $("newGender").value;
-  if (!name) return alert("请输入学生姓名");
-  if (!cls) return alert("请先选择班级");
+  if (!name) return alert(t('err_enter_student_name'));
+  if (!cls) return alert(t('err_select_class_first'));
 
   const { data: existing, error: readErr } = await supabaseClient
     .from("students")
@@ -2340,11 +2475,11 @@ async function addStudent() {
     .eq("class_id", cls)
     .order("student_no", { ascending: false })
     .limit(1);
-  if (readErr) { alert("读取编号失败：" + readErr.message); return; }
+  if (readErr) { alert(t('err_read_no_fail') + readErr.message); return; }
   const nextNo = (existing && existing.length ? existing[0].student_no : 0) + 1;
 
   const { error } = await supabaseClient.from("students").insert({ class_id: cls, student_no: nextNo, name, gender });
-  if (error) { alert("新增学生失败：" + error.message); return; }
+  if (error) { alert(t('err_add_student_fail') + error.message); return; }
   $("newName").value = "";
   
   if (currentRole === "admin") await loadAdminGlobalData();
@@ -2358,9 +2493,9 @@ async function addStudent() {
 
 async function deleteStudent(id, name) {
   if (currentRole !== "admin") return;
-  if (!confirm(`确定删除学生 ${name}？其出席记录也会一并删除。`)) return;
+  if (!confirm(tFormat('confirm_delete_student', { name }))) return;
   const { error } = await supabaseClient.from("students").delete().eq("id", id);
-  if (error) { alert("删除失败：" + error.message); return; }
+  if (error) { alert(t('err_delete_student_fail') + error.message); return; }
   
   if (currentRole === "admin") await loadAdminGlobalData();
   else {
@@ -2577,7 +2712,7 @@ function renderDashboard() {
               <div style="background:${barColor};height:100%;width:${cRateNum}%;transition:width 0.5s ease-out;border-radius:4px"></div>
               <span style="position:absolute;right:8px;top:0;line-height:16px;font-size:11px;color:#fff;font-weight:600;text-shadow:0 0 2px rgba(0,0,0,0.5)">${cRateNum.toFixed(1)}%</span>
             </div>
-            <div style="width:60px;text-align:right;color:var(--muted)">${cPresent}/${cTotal} 人</div>
+            <div style="width:60px;text-align:right;color:var(--muted)">${cPresent}/${cTotal} ${t('students_count')}</div>
           </div>
         `;
       }).join("");
