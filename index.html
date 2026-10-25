@@ -6,95 +6,113 @@
 <title>学校出席与日志系统｜SJK(C) Chung Hua Rantau</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-/* ========== 温馨暖色系变量 ========== */
+/* ========== 专业行政级配色变量 ========== */
 :root{
-  --primary: #e07a5f;        /* 暖珊瑚橙 */
-  --primary-hover: #c9684f;
-  --primary-light: #fdf3f0;  /* 极浅的蜜桃背景 */
-  --secondary: #f4a261;      /* 暖橙 */
-  --success: #81b29a;        /* 柔和抹茶绿 */
-  --success-light: #e8f5ef;
-  --danger: #e76f51;         /* 珊瑚红 */
-  --danger-light: #fbeceb;
-  --warning: #f2cc8f;        /* 奶油黄 */
-  --warning-light: #fef8eb;
-  --info: #a37cbb;           /* 香芋紫 */
-  --border: #f0e3df;         /* 暖灰边框 */
-  --bg: #fcf9f8;             /* 奶油白背景 */
-  --ink: #3d405b;            /* 深灰蓝文字 */
-  --muted: #8d8b8a;          /* 暖灰文字 */
+  --primary: #1e3a8a;        /* 深邃蓝 */
+  --primary-hover: #1e40af;
+  --primary-light: #eff6ff;  /* 极浅蓝底色 */
+  --secondary: #475569;      /* 石板灰 */
+  --secondary-hover: #334155;
+  --success: #10b981;        /* 翡翠绿 */
+  --success-light: #ecfdf5;
+  --danger: #ef4444;         /* 警示红 */
+  --danger-light: #fef2f2;
+  --warning: #f59e0b;        /* 琥珀黄 */
+  --warning-light: #fffbeb;
+  --info: #6366f1;           /* 靛蓝 */
+  --info-hover: #4f46e5;
+  --border: #e2e8f0;         /* 清晰冷灰边框 */
+  --bg: #f8fafc;             /* 极浅灰背景 */
+  --ink: #0f172a;            /* 近黑文字 */
+  --muted: #64748b;          /* 辅助文字 */
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 body{
-  margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
+  margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   background:var(--bg);color:var(--ink);
 }
 
 /* ========== 通用 ========== */
 .hidden{display:none!important}
 .muted{color:var(--muted);font-size:13px}
-.pill{display:inline-block;padding:4px 10px;border-radius:999px;background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:700}
-.status{padding:12px 14px;border-radius:10px;background:var(--primary-light);margin-bottom:14px;white-space:pre-wrap;font-size:13px;border:1px solid var(--border)}
-.status.error{background:var(--danger-light);color:var(--danger);border-color:#f5d0c7}
-.status.ok{background:var(--success-light);color:var(--success);border-color:#cde6dc}
+.pill{display:inline-block;padding:4px 10px;border-radius:999px;background:var(--primary-light);color:var(--primary);font-size:12px;font-weight:600}
+.status{padding:12px 14px;border-radius:8px;background:#f1f5f9;margin-bottom:14px;white-space:pre-wrap;font-size:13px;border:1px solid var(--border)}
+.status.error{background:var(--danger-light);color:var(--danger);border-color:#fecaca}
+.status.ok{background:var(--success-light);color:var(--success);border-color:#a7f3d0}
 input,select,button{font:inherit}
-input,select{padding:10px 12px;border:1px solid #e0d4d0;border-radius:10px;width:100%;background:#fff;min-height:42px;transition:all .2s}
-input:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px var(--primary-light)}
-button{border:0;border-radius:10px;padding:10px 16px;background:var(--primary);color:white;cursor:pointer;font-weight:600;transition:all .2s}
-button:hover{background:var(--primary-hover);transform:translateY(-1px)}
+input,select{padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;width:100%;background:#fff;min-height:40px;transition:all .2s;font-size:14px;color:var(--ink)}
+input:focus,select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(30, 58, 138, 0.15)}
+button{border:0;border-radius:8px;padding:10px 16px;background:var(--primary);color:white;cursor:pointer;font-weight:500;font-size:14px;transition:all .2s;box-shadow:0 1px 2px rgba(0,0,0,0.05)}
+button:hover{background:var(--primary-hover)}
 button:active{transform:translateY(1px)}
-button.secondary{background:#f0e8e5;color:var(--ink)}
-button.secondary:hover{background:#e6ddd9}
+button.secondary{background:#fff;color:var(--ink);border:1px solid var(--border);box-shadow:0 1px 2px rgba(0,0,0,0.02)}
+button.secondary:hover{background:#f8fafc}
 button.danger{background:var(--danger)}
-button.danger:hover{background:#d15f43}
-button:disabled{opacity:.55;cursor:not-allowed;transform:none}
-small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px}
+button.danger:hover{background:#dc2626}
+button:disabled{opacity:.6;cursor:not-allowed;transform:none}
+small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font-size:12px}
 
 /* ========== 顶部导航 ========== */
 .top-nav{
-  background: linear-gradient(135deg, #f6d8c9 0%, #f2cc8f 100%);
-  color: var(--ink);
-  padding:14px 24px;
+  background:#ffffff;
+  color:var(--ink);
+  padding:12px 24px;
   display:flex;justify-content:space-between;align-items:center;
-  box-shadow:0 4px 15px rgba(224, 122, 95, 0.1);
+  box-shadow:0 1px 3px rgba(0,0,0,0.05);
   position:sticky;top:0;z-index:1000;
   flex-wrap:wrap;gap:12px;
-  border-bottom: 1px solid rgba(255,255,255,0.5);
+  border-bottom: 1px solid var(--border);
 }
-.top-nav h1{font-size:18px;margin:0;display:flex;align-items:center;gap:10px;color:#3d405b}
-.top-nav small{opacity:.8;display:block;margin-top:4px;font-size:12px;color:#6b6e8b}
-.lang-switcher select{padding:6px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.6);font-weight:bold;background:rgba(255,255,255,0.7);color:var(--ink);min-height:auto;width:auto;backdrop-filter:blur(4px)}
-.lang-switcher select:focus{box-shadow:0 0 0 3px rgba(255,255,255,0.4)}
-#schoolLogo{width:40px;height:40px;object-fit:contain;border-radius:8px;background:#fff;padding:2px;box-shadow:0 2px 6px rgba(0,0,0,0.05)}
-#defaultIcon{font-size:24px;line-height:1}
+.top-nav h1{font-size:18px;margin:0;display:flex;align-items:center;gap:12px;font-weight:600;color:var(--primary)}
+.top-nav small{opacity:.7;display:block;margin-top:2px;font-size:12px;color:var(--muted)}
+
+/* 限制顶部校徽的最大尺寸，防止撑破页面 */
+#schoolLogo{
+  width:36px;height:36px;max-width:36px;max-height:36px;
+  object-fit:contain;border-radius:6px;background:#f1f5f9;padding:2px;
+  border:1px solid var(--border);flex-shrink:0;
+}
+
+/* 修复移动端顶部导航排列 */
+.top-nav .user-controls {
+  display:flex; align-items:center; gap:12px; flex-wrap:nowrap;
+}
+@media(max-width:767px){
+  .top-nav { padding: 10px 16px; }
+  .top-nav h1 { font-size: 16px; }
+  .top-nav .user-controls { width: 100%; justify-content: flex-end; gap: 8px; }
+  .top-nav .user-controls .pill { max-width: 130px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; padding: 4px 8px; }
+  .top-nav .user-controls button { padding: 6px 12px; font-size: 13px; min-height: auto; }
+  .lang-switcher select { padding: 6px 8px; font-size: 13px; min-height: 32px; }
+}
 
 /* ========== 登录面板 ========== */
-.login-wrap{max-width:420px;margin:80px auto;padding:0 20px}
-.login-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:32px;box-shadow:0 10px 30px rgba(224, 122, 95, 0.08)}
-.login-card h2{font-size:22px;margin:0 0 10px;color:var(--primary)}
-.login-card .desc{font-size:13px;color:var(--muted);margin:0 0 24px;line-height:1.5}
+.login-wrap{max-width:400px;margin:100px auto;padding:0 20px}
+.login-card{background:#fff;border:1px solid var(--border);border-radius:12px;padding:32px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.05), 0 2px 4px -1px rgba(0,0,0,0.03)}
+.login-card h2{font-size:22px;margin:0 0 8px;color:var(--ink);font-weight:600}
+.login-card .desc{font-size:14px;color:var(--muted);margin:0 0 24px;line-height:1.5}
 .login-card .field{margin-bottom:16px}
-.login-card label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px}
-.login-card button[type=submit]{width:100%;padding:14px;font-size:16px;margin-top:10px}
+.login-card label{display:block;font-size:13px;font-weight:500;color:var(--ink);margin-bottom:6px}
+.login-card button[type=submit]{width:100%;padding:12px;font-size:15px;margin-top:8px}
 
 /* ========== 桌面端布局 ========== */
 @media(min-width:768px){
   .mobile-only{display:none!important}
   .desktop-container{
-    max-width:1500px;margin:0 auto;padding:24px;
+    max-width:1440px;margin:0 auto;padding:24px;
     display:flex;gap:24px;align-items:flex-start;
   }
   .attendance-panel{
-    flex:1;min-width:360px;background:#fff;padding:24px;border-radius:16px;
-    box-shadow:0 4px 20px rgba(224, 122, 95, 0.06);display:flex;flex-direction:column;
+    flex:1;min-width:360px;background:#fff;padding:24px;border-radius:12px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid var(--border);display:flex;flex-direction:column;
   }
   .log-panel{
-    flex:1.8;min-width:700px;background:#fff;padding:24px;border-radius:16px;
-    box-shadow:0 4px 20px rgba(224, 122, 95, 0.06);overflow-x:auto;
+    flex:2;min-width:700px;background:#fff;padding:24px;border-radius:12px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.05);border:1px solid var(--border);overflow-x:auto;
   }
   .form-group{margin-bottom:16px}
-  .form-group label{display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px}
-  .info-display{background:var(--primary-light);padding:12px;border-radius:10px;margin-bottom:16px;font-size:13px;display:flex;justify-content:space-between;border:1px solid var(--border)}
+  .form-group label{display:block;font-size:13px;font-weight:500;color:var(--ink);margin-bottom:6px}
+  .info-display{background:#f8fafc;padding:12px;border-radius:8px;margin-bottom:16px;font-size:13px;display:flex;justify-content:space-between;border:1px solid var(--border);color:var(--ink)}
   
   /* 整齐划一的 2x2 网格布局 */
   .batch-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
@@ -105,118 +123,120 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px}
     display:flex;
     align-items:center;
     justify-content:center;
-    border-radius:10px;
+    border-radius:8px;
   }
 
-  .btn-all-present{background:var(--success)}
-  .btn-all-present:hover{background:#6fa088}
-  .btn-all-absent{background:var(--danger)}
-  .btn-all-absent:hover{background:#d15f43}
-  .btn-manage-school{background:var(--info)}
-  .btn-manage-school:hover{background:#916fa8}
-  .btn-manage-student{background:#e59866}
-  .btn-manage-student:hover{background:#d68957}
-  .btn-backup{background:var(--secondary)}
-  .btn-backup:hover{background:#e09252}
-  .btn-restore{background:#a78b7a}
-  .btn-restore:hover{background:#937968}
+  .btn-all-present{background:var(--success);color:white}
+  .btn-all-present:hover{background:#059669}
+  .btn-all-absent{background:var(--danger);color:white}
+  .btn-all-absent:hover{background:#dc2626}
+  .btn-manage-school{background:var(--info);color:white}
+  .btn-manage-school:hover{background:var(--info-hover)}
+  .btn-manage-student{background:#0891b2;color:white}
+  .btn-manage-student:hover{background:#0e7490}
+  .btn-backup{background:var(--secondary);color:white}
+  .btn-backup:hover{background:var(--secondary-hover)}
+  .btn-restore{background:#78716c;color:white}
+  .btn-restore:hover{background:#57534e}
   
-  /* 修正：桌面端学生卡片按自然顺序（从左到右）排列 */
+  /* 桌面端学生卡片：专业网格 */
   .student-list{
     display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(140px,1fr));
-    gap:10px;
-    margin-bottom:20px;max-height:480px;overflow-y:auto;padding-right:5px;
+    grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
+    gap:12px;
+    margin-bottom:24px;max-height:480px;overflow-y:auto;padding-right:4px;
   }
   .student-card{
-    border:2px solid var(--border);border-radius:12px;padding:10px;cursor:pointer;
-    background:#fff;font-size:13px;position:relative;text-align:left;transition:all .2s;
+    border:1px solid var(--border);border-radius:8px;padding:12px;cursor:pointer;
+    background:#fff;font-size:14px;position:relative;text-align:left;transition:all .2s;
+    box-shadow:0 1px 2px rgba(0,0,0,0.02);
   }
-  .student-card:hover{border-color:#e0d4d0;transform:translateY(-1px)}
-  .student-card.present{background:var(--success-light);border-color:var(--success)}
-  .student-card.absent{background:var(--danger-light);border-color:var(--danger);text-decoration:line-through;color:var(--danger)}
-  .student-card .no{position:absolute;top:6px;right:8px;font-size:11px;color:var(--muted);font-weight:600}
-  .student-card .name{font-weight:bold;display:block;margin-top:4px;padding-right:25px}
-  .student-card .gender{font-size:11px;color:var(--muted);display:block;margin-top:2px}
-  .btn-save{width:100%;padding:16px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:16px;cursor:pointer;font-weight:bold;margin-top:auto;box-shadow:0 4px 10px rgba(224, 122, 95, 0.2)}
+  .student-card:hover{border-color:#cbd5e1;box-shadow:0 2px 4px rgba(0,0,0,0.05)}
+  .student-card.present{background:var(--success-light);border-color:#a7f3d0}
+  .student-card.absent{background:var(--danger-light);border-color:#fecaca;text-decoration:line-through;color:#b91c1c}
+  .student-card .no{position:absolute;top:8px;right:10px;font-size:11px;color:var(--muted);font-weight:500}
+  .student-card .name{font-weight:600;display:block;margin-top:4px;padding-right:24px;word-break:break-word;}
+  .student-card .gender{font-size:12px;color:var(--muted);display:block;margin-top:4px}
+  .btn-save{width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:8px;font-size:15px;cursor:pointer;font-weight:600;margin-top:auto;box-shadow:0 2px 4px rgba(30,58,138,0.2)}
 
-  /* 日志表格 */
-  .log-header{text-align:center;font-size:20px;font-weight:bold;margin-bottom:16px;letter-spacing:1px;color:var(--primary)}
-  .info-row{display:flex;border:1px solid var(--border);border-bottom:none;border-radius:10px 10px 0 0;overflow:hidden;background:var(--primary-light)}
-  .info-row>div{flex:1;padding:8px;text-align:center;border-right:1px solid var(--border);font-size:13px;font-weight:500}
+  /* 日志表格：专业数据表风格 */
+  .log-header{text-align:center;font-size:20px;font-weight:600;margin-bottom:16px;letter-spacing:0.5px;color:var(--ink)}
+  .info-row{display:flex;border:1px solid var(--border);border-bottom:none;border-radius:8px 8px 0 0;overflow:hidden;background:#f8fafc}
+  .info-row>div{flex:1;padding:10px;text-align:center;border-right:1px solid var(--border);font-size:13px;font-weight:500;color:var(--secondary)}
   .info-row>div:last-child{border-right:none}
-  table.dt-table{width:100%;border-collapse:collapse;font-size:13px;text-align:center;border:1px solid var(--border);border-radius:0 0 10px 10px;overflow:hidden}
-  .dt-table th,.dt-table td{border:1px solid var(--border);padding:8px 4px}
-  .dt-table th{background:#fcf9f8;font-weight:600;color:var(--ink)}
-  .global-stats{background:var(--warning-light);border:2px solid var(--warning);padding:20px;border-radius:12px;display:flex;justify-content:space-around;flex-wrap:wrap;margin-top:20px;font-size:14px;box-shadow:0 4px 15px rgba(242, 204, 143, 0.15)}
-  .global-stats strong{display:inline-block;margin-top:6px}
-  .absent-list-box{margin-top:24px;border:1px solid var(--border);border-radius:12px;padding:16px;background:#fff}
+  table.dt-table{width:100%;border-collapse:collapse;font-size:13px;text-align:center;border:1px solid var(--border);border-radius:0 0 8px 8px;overflow:hidden}
+  .dt-table th,.dt-table td{border:1px solid var(--border);padding:10px 6px}
+  .dt-table th{background:#f8fafc;font-weight:600;color:var(--secondary)}
+  .dt-table tr:nth-child(even){background:#fbfbfc}
+  .global-stats{background:#fff;border:1px solid var(--border);padding:20px;border-radius:8px;display:flex;justify-content:space-around;flex-wrap:wrap;margin-top:24px;font-size:14px;box-shadow:0 1px 2px rgba(0,0,0,0.02)}
+  .global-stats strong{display:inline-block;margin-top:8px}
+  .absent-list-box{margin-top:24px;border:1px solid var(--border);border-radius:8px;padding:16px;background:#fff}
   .absent-table{width:100%;border-collapse:collapse;font-size:13px}
-  .absent-table th,.absent-table td{border:1px solid var(--border);padding:8px;text-align:center}
-  .absent-table th{background:var(--danger-light);color:var(--danger);font-weight:600}
+  .absent-table th,.absent-table td{border:1px solid var(--border);padding:10px;text-align:center}
+  .absent-table th{background:#f8fafc;color:var(--secondary);font-weight:600}
 }
 
 /* ========== 移动端布局 ========== */
 @media(max-width:767px){
   .desktop-only{display:none!important}
   .page{padding:16px;padding-bottom:90px}
-  .info-card{background:#fff;border-radius:16px;padding:16px;margin-bottom:16px;box-shadow:0 4px 15px rgba(224, 122, 95, 0.05)}
-  .info-card input[type=date]{width:100%;padding:12px;font-size:16px;border:1px solid var(--border);border-radius:10px;background:var(--primary-light);color:var(--ink)}
+  .info-card{background:#fff;border-radius:12px;padding:16px;margin-bottom:16px;border:1px solid var(--border);box-shadow:0 1px 2px rgba(0,0,0,0.02)}
+  .info-card input[type=date]{width:100%;padding:12px;font-size:16px;border:1px solid var(--border);border-radius:8px;background:#f8fafc;color:var(--ink)}
   .class-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:12px}
-  .class-btn{background:#fff;border:2px solid var(--border);border-radius:12px;padding:16px 6px;text-align:center;font-size:16px;font-weight:bold;color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,0.02);cursor:pointer;transition:all .2s}
-  .class-btn:active{background:var(--primary-light);transform:scale(.98);border-color:var(--primary)}
+  .class-btn{background:#fff;border:1px solid var(--border);border-radius:10px;padding:16px 6px;text-align:center;font-size:16px;font-weight:600;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,0.02);cursor:pointer;transition:all .2s}
+  .class-btn:active{background:#f1f5f9;transform:scale(.98);border-color:#cbd5e1}
   .class-btn .count{display:block;font-size:12px;color:var(--muted);font-weight:normal;margin-top:6px}
-  .btn-log{width:100%;padding:16px;background:var(--primary);color:white;border:none;border-radius:12px;font-size:16px;font-weight:bold;margin-top:20px;box-shadow:0 4px 12px rgba(224, 122, 95, 0.2)}
-  .attendance-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;background:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 2px 10px rgba(0,0,0,0.03)}
-  .back-btn{background:none;border:none;font-size:15px;color:var(--primary);font-weight:bold;padding:0;cursor:pointer}
+  .btn-log{width:100%;padding:16px;background:var(--primary);color:white;border:none;border-radius:10px;font-size:16px;font-weight:600;margin-top:20px;box-shadow:0 4px 6px -1px rgba(30,58,138,0.2)}
+  .attendance-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;background:#fff;padding:12px 16px;border-radius:10px;border:1px solid var(--border);box-shadow:0 1px 2px rgba(0,0,0,0.02)}
+  .back-btn{background:none;border:none;font-size:15px;color:var(--primary);font-weight:600;padding:0;cursor:pointer;box-shadow:none;}
   .student-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:12px;margin-bottom:20px}
-  .student-card{background:var(--success-light);border:2px solid var(--success);border-radius:12px;padding:14px 6px;text-align:center;position:relative;cursor:pointer;transition:all .2s}
-  .student-card.absent{background:var(--danger-light);border-color:var(--danger);color:var(--danger);text-decoration:line-through}
-  .student-card .name{font-weight:bold;font-size:14px;display:block}
-  .student-card .no{font-size:11px;color:var(--muted);display:block;margin-top:2px}
-  .bottom-action-bar{position:fixed;bottom:0;left:0;width:100%;background:#fff;padding:12px 16px;box-shadow:0 -4px 20px rgba(0,0,0,0.05);display:flex;gap:12px;z-index:200}
-  .btn-save-m{flex:2;background:var(--primary);color:white;border:none;padding:14px;border-radius:12px;font-size:16px;font-weight:bold;cursor:pointer}
-  .btn-batch-m{flex:1;background:var(--secondary);color:white;border:none;padding:14px;border-radius:12px;font-size:13px;font-weight:bold;cursor:pointer}
-  .log-card{background:#fff;border-radius:16px;padding:16px;margin-bottom:14px;box-shadow:0 4px 15px rgba(0,0,0,0.03);border-left:6px solid var(--primary)}
+  .student-card{background:var(--success-light);border:1px solid #a7f3d0;border-radius:10px;padding:14px 6px;text-align:center;position:relative;cursor:pointer;transition:all .2s}
+  .student-card.absent{background:var(--danger-light);border-color:#fecaca;color:#b91c1c;text-decoration:line-through}
+  .student-card .name{font-weight:600;font-size:14px;display:block;word-break:break-word;}
+  .student-card .no{font-size:11px;color:var(--muted);display:block;margin-top:4px}
+  .bottom-action-bar{position:fixed;bottom:0;left:0;width:100%;background:#fff;padding:12px 16px;border-top:1px solid var(--border);box-shadow:0 -4px 6px -1px rgba(0,0,0,0.05);display:flex;gap:12px;z-index:200}
+  .btn-save-m{flex:2;background:var(--primary);color:white;border:none;padding:14px;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer}
+  .btn-batch-m{flex:1;background:#fff;color:var(--ink);border:1px solid var(--border);padding:14px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.02)}
+  .log-card{background:#fff;border-radius:12px;padding:16px;margin-bottom:14px;border:1px solid var(--border);box-shadow:0 1px 2px rgba(0,0,0,0.02)}
   .log-card-header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:12px}
-  .log-card-title{font-size:18px;font-weight:bold;color:var(--primary)}
-  .log-card-rate{font-size:14px;font-weight:bold;color:var(--success);background:var(--success-light);padding:6px 10px;border-radius:6px}
+  .log-card-title{font-size:18px;font-weight:600;color:var(--primary)}
+  .log-card-rate{font-size:14px;font-weight:600;color:var(--success);background:var(--success-light);padding:4px 8px;border-radius:4px}
   .log-card-body{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center}
-  .log-data-group{background:#fcf9f8;padding:10px;border-radius:10px}
+  .log-data-group{background:#f8fafc;padding:10px;border-radius:6px;border:1px solid var(--border)}
   .log-data-group .title{font-size:12px;color:var(--muted);margin-bottom:6px}
-  .log-data-group .value{font-size:16px;font-weight:bold}
+  .log-data-group .value{font-size:16px;font-weight:600}
   .log-data-group .value span{font-size:11px;font-weight:normal;color:var(--muted)}
-  .log-card-notes{margin-top:12px;font-size:13px;color:var(--danger);background:var(--danger-light);padding:10px;border-radius:8px}
-  .global-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px;margin-top:20px;background:var(--warning-light);border:2px solid var(--warning);border-radius:16px}
+  .log-card-notes{margin-top:12px;font-size:13px;color:var(--danger);background:var(--danger-light);padding:10px;border-radius:6px}
+  .global-stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:16px;margin-top:20px;background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,0.02)}
   .global-stats>div{text-align:center}
-  .absent-list-box{margin-top:20px;border:1px solid var(--border);border-radius:16px;padding:16px;background:#fff}
+  .absent-list-box{margin-top:20px;border:1px solid var(--border);border-radius:12px;padding:16px;background:#fff}
   .absent-table{width:100%;border-collapse:collapse;font-size:13px}
   .absent-table th,.absent-table td{border:1px solid var(--border);padding:8px;text-align:center}
-  .absent-table th{background:var(--danger-light);color:var(--danger);font-weight:600}
+  .absent-table th{background:#f8fafc;color:var(--secondary);font-weight:600}
 }
 
 /* ========== 弹窗 ========== */
-.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(61, 64, 91, 0.4);backdrop-filter:blur(2px);z-index:2000;justify-content:center;align-items:center;padding:16px}
-.modal-content{background:#fff;padding:24px;border-radius:16px;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 40px rgba(0,0,0,0.1)}
+.modal-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(15, 23, 42, 0.5);backdrop-filter:blur(2px);z-index:2000;justify-content:center;align-items:center;padding:16px}
+.modal-content{background:#fff;padding:24px;border-radius:12px;width:100%;max-width:720px;max-height:90vh;overflow-y:auto;box-shadow:0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);border:1px solid var(--border)}
 .modal-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:16px}
-.modal-header h3{margin:0;font-size:18px;color:var(--primary)}
-.close-btn{background:none;border:none;font-size:28px;cursor:pointer;color:var(--muted);padding:0 6px;line-height:1;transition:color .2s}
-.close-btn:hover{color:var(--danger)}
-.add-form{display:flex;gap:10px;margin-bottom:16px;background:#fcf9f8;padding:12px;border-radius:10px;flex-wrap:wrap}
-.add-form input,.add-form select{padding:10px;border:1px solid var(--border);border-radius:8px;flex:1;min-width:100px;min-height:auto}
-.btn-action{flex:1;text-align:center;padding:12px;border-radius:10px;font-size:14px;font-weight:bold;color:white;cursor:pointer;border:none;display:flex;justify-content:center;align-items:center;transition:all .2s}
+.modal-header h3{margin:0;font-size:18px;color:var(--ink);font-weight:600}
+.close-btn{background:none;border:none;font-size:24px;cursor:pointer;color:var(--muted);padding:0 6px;line-height:1;transition:color .2s;box-shadow:none;}
+.close-btn:hover{color:var(--danger);background:none}
+.add-form{display:flex;gap:10px;margin-bottom:16px;background:#f8fafc;padding:16px;border-radius:8px;flex-wrap:wrap;border:1px solid var(--border)}
+.add-form input,.add-form select{padding:10px;border:1px solid #cbd5e1;border-radius:6px;flex:1;min-width:100px;min-height:auto;font-size:14px}
+.btn-action{flex:1;text-align:center;padding:12px;border-radius:8px;font-size:14px;font-weight:600;color:white;cursor:pointer;border:none;display:flex;justify-content:center;align-items:center;transition:all .2s}
 .btn-success{background:var(--success)}
-.btn-success:hover{background:#6fa088}
+.btn-success:hover{background:#059669}
 .btn-danger{background:var(--danger)}
-.btn-danger:hover{background:#d15f43}
+.btn-danger:hover{background:#dc2626}
 .btn-info{background:var(--info)}
-.btn-info:hover{background:#916fa8}
+.btn-info:hover{background:var(--info-hover)}
 .btn-warning{background:var(--warning);color:var(--ink)}
-.btn-warning:hover{background:#e5bc7a}
-.btn-teal{background:#81b29a}
-.btn-brown{background:#a78b7a}
+.btn-warning:hover{background:#d97706}
+.btn-teal{background:#0891b2}
+.btn-brown{background:#78716c}
 .btn-outline{background:#fff;color:var(--ink);border:1px solid var(--border)}
-.btn-outline:hover{background:#fcf9f8}
+.btn-outline:hover{background:#f8fafc}
 
 /* ========== 打印 ========== */
 @media print{
@@ -225,13 +245,17 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px}
   .top-nav,.desktop-container,.mobile-only,.modal-overlay{display:none!important}
   #printContainer{display:block!important;width:100%!important;margin:0!important;padding:0!important}
   
-  /* 打印头部排版 */
+  /* 打印头部排版（包含校徽和校名） */
   .print-header-wrap{
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     margin-bottom:16px;text-align:center;
   }
-  .print-header-logo{max-height:60px;max-width:120px;object-fit:contain;margin-bottom:8px;}
-  .print-header-school{font-size:20px;font-weight:bold;letter-spacing:1px;margin-bottom:4px;}
+  /* 限制打印时校徽的最大尺寸 */
+  .print-header-logo{
+    max-height:60px;max-width:120px;object-fit:contain;margin-bottom:8px;
+    display:block;
+  }
+  .print-header-school{font-size:22px;font-weight:bold;letter-spacing:1px;margin-bottom:6px;}
   .print-header-title{font-size:16px;font-weight:bold;margin-bottom:6px;}
   
   .print-info-row{display:flex!important;flex-direction:row!important;border:1px solid #000!important;margin-bottom:10px;border-radius:4px;overflow:hidden}
@@ -266,9 +290,9 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px}
     </h1>
     <small id="navSub">SJK(C) Chung Hua Rantau · Supabase Cloud</small>
   </div>
-  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <span id="userBadge" class="pill hidden" style="background:rgba(255,255,255,.4);color:var(--ink)"></span>
-    <button id="logoutBtn" class="secondary hidden" onclick="signOut()" style="min-height:auto;padding:8px 16px;font-size:13px;background:rgba(255,255,255,.6);border:1px solid rgba(255,255,255,.8)">登出</button>
+  <div class="user-controls">
+    <span id="userBadge" class="pill hidden"></span>
+    <button id="logoutBtn" class="secondary hidden" onclick="signOut()">登出</button>
     <div class="lang-switcher">
       <select id="langSelect" onchange="changeLanguage()">
         <option value="zh">中文</option>
@@ -348,7 +372,7 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px}
     <!-- 右侧：日志面板 -->
     <div class="log-panel">
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-bottom:12px">
-        <button onclick="printReport('desktop')" style="padding:8px 16px;background:var(--info);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:bold;font-size:13px;transition:all .2s" onmouseover="this.style.background='#916fa8'" onmouseout="this.style.background='var(--info)'" data-i18n="btn_print">🖨️ 打印报告</button>
+        <button onclick="printReport('desktop')" style="padding:8px 16px;background:var(--info);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:500;font-size:13px;transition:all .2s" onmouseover="this.style.background='var(--info-hover)'" onmouseout="this.style.background='var(--info)'" data-i18n="btn_print">🖨️ 打印报告</button>
       </div>
 
       <div id="desktopReportView">
@@ -374,10 +398,10 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px}
           <tbody id="dt_logTableBody"></tbody>
         </table>
         <div class="global-stats">
-          <div style="text-align:center"><span data-i18n="stat_total">今日全校总人数</span><br><strong id="dt_globalTotal" style="font-size:22px;color:var(--primary)">-</strong></div>
-          <div style="text-align:center"><span data-i18n="stat_present">今日全级出席</span><br><strong id="dt_globalPresent" style="font-size:22px;color:var(--success)">-</strong></div>
-          <div style="text-align:center"><span data-i18n="stat_absent">今日全级缺席</span><br><strong id="dt_globalAbsent" style="font-size:22px;color:var(--danger)">-</strong></div>
-          <div style="text-align:center"><span data-i18n="stat_rate">全级出席率</span><br><strong id="dt_globalPercent" style="font-size:22px;color:var(--info)">-</strong></div>
+          <div style="text-align:center"><span data-i18n="stat_total">今日全校总人数</span><br><strong id="dt_globalTotal" style="font-size:24px;color:var(--primary)">-</strong></div>
+          <div style="text-align:center"><span data-i18n="stat_present">今日全级出席</span><br><strong id="dt_globalPresent" style="font-size:24px;color:var(--success)">-</strong></div>
+          <div style="text-align:center"><span data-i18n="stat_absent">今日全级缺席</span><br><strong id="dt_globalAbsent" style="font-size:24px;color:var(--danger)">-</strong></div>
+          <div style="text-align:center"><span data-i18n="stat_rate">全级出席率</span><br><strong id="dt_globalPercent" style="font-size:24px;color:var(--primary)">-</strong></div>
         </div>
         <div class="absent-list-box">
           <h4 style="margin:0 0 12px 0;color:var(--danger);font-size:15px" data-i18n="absent_title">📝 缺席学生名单</h4>
@@ -395,25 +419,25 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px}
     <!-- 页面 1：主页 -->
     <div class="page" id="m_pageHome">
       <div class="info-card">
-        <label data-i18n="date_label" style="display:block;font-size:13px;font-weight:600;color:var(--ink);margin-bottom:8px">选择日期 (Date)</label>
+        <label data-i18n="date_label" style="display:block;font-size:13px;font-weight:500;color:var(--ink);margin-bottom:8px">选择日期 (Date)</label>
         <input type="date" id="m_dateInput" onchange="syncDate('m')">
-        <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:13px;background:var(--primary-light);padding:12px;border-radius:10px;border:1px solid var(--border)">
+        <div style="display:flex;justify-content:space-between;margin-top:12px;font-size:13px;background:#f8fafc;padding:12px;border-radius:8px;border:1px solid var(--border)">
           <span><span data-i18n="sem_label">学期</span>: <strong class="dispSem">-</strong></span>
           <span><span data-i18n="week_label">周次</span>: <strong class="dispWeek">-</strong></span>
           <span><span data-i18n="day_label">星期</span>: <strong class="dispDay">-</strong></span>
         </div>
       </div>
 
-      <div style="font-size:16px;font-weight:bold;margin:16px 0;color:var(--primary)" data-i18n="select_class_title">请选择班级进行点名：</div>
+      <div style="font-size:16px;font-weight:600;margin:16px 0;color:var(--ink)" data-i18n="select_class_title">请选择班级进行点名：</div>
       <div class="class-grid" id="m_classGrid"></div>
 
       <button class="btn-log" onclick="goToPage('m_pageLog')" data-i18n="btn_view_log">📊 查看学校日志</button>
 
       <div style="display:flex;gap:10px;margin-top:24px" id="mobileAdminBtns" style="display:none">
-        <button onclick="backupData()" style="flex:1;padding:12px;border:1px solid var(--border);background:#fff;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,0.02)" data-i18n="btn_backup">💾 备份</button>
-        <button onclick="document.getElementById('globalRestoreInput').click()" style="flex:1;padding:12px;border:1px solid var(--border);background:#fff;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,0.02)" data-i18n="btn_restore">📂 恢复</button>
-        <button onclick="openManageModal('school')" style="flex:1;padding:12px;border:1px solid var(--border);background:#fff;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,0.02)" data-i18n="btn_manage_school">🏫 学校</button>
-        <button onclick="openManageModal('student')" style="flex:1;padding:12px;border:1px solid var(--border);background:#fff;border-radius:10px;font-size:13px;font-weight:600;color:var(--ink);box-shadow:0 2px 6px rgba(0,0,0,0.02)" data-i18n="btn_manage_student">👨‍🎓 学生</button>
+        <button onclick="backupData()" style="flex:1;padding:12px;border:1px solid var(--border);background:#fff;border-radius:8px;font-size:13px;font-weight:500;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,0.02)" data-i18n="btn_backup">💾 备份</button>
+        <button onclick="document.getElementById('globalRestoreInput').click()" style="flex:1;padding:12px;border:1px solid var(--border);background:#fff;border-radius:8px;font-size:13px;font-weight:500;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,0.02)" data-i18n="btn_restore">📂 恢复</button>
+        <button onclick="openManageModal('school')" style="flex:1;padding:12px;border:1px solid var(--border);background:#fff;border-radius:8px;font-size:13px;font-weight:500;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,0.02)" data-i18n="btn_manage_school">🏫 学校</button>
+        <button onclick="openManageModal('student')" style="flex:1;padding:12px;border:1px solid var(--border);background:#fff;border-radius:8px;font-size:13px;font-weight:500;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,0.02)" data-i18n="btn_manage_student">👨‍🎓 学生</button>
       </div>
     </div>
 
@@ -424,11 +448,11 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px}
         <h3 style="margin:0;font-size:18px;color:var(--primary)" id="m_currentClassName">-</h3>
         <div style="width:50px"></div>
       </div>
-      <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:16px;background:var(--primary-light);padding:10px;border-radius:10px" data-i18n="attendance_tip">默认全员出席。点击学生名字将其标记为缺席 (变红)。</div>
+      <div style="text-align:center;font-size:13px;color:var(--muted);margin-bottom:16px;background:#f8fafc;padding:10px;border-radius:8px;border:1px solid var(--border)" data-i18n="attendance_tip">默认全员出席。点击学生名字将其标记为缺席 (变红)。</div>
       <div class="student-grid" id="m_studentList"></div>
       <div class="bottom-action-bar">
         <button class="btn-batch-m" onclick="batchSet(true)" data-i18n="btn_all_present">全部出席</button>
-        <button class="btn-batch-m" onclick="batchSet(false)" style="background:var(--danger)" data-i18n="btn_all_absent">全部缺席</button>
+        <button class="btn-batch-m" onclick="batchSet(false)" style="color:var(--danger);border-color:#fecaca" data-i18n="btn_all_absent">全部缺席</button>
         <button class="btn-save-m" onclick="saveAttendance()" data-i18n="btn_save">💾 保存</button>
       </div>
     </div>
@@ -441,7 +465,7 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px}
         <button class="back-btn" onclick="printReport('mobile')" style="color:var(--info);font-weight:600" data-i18n="btn_print">🖨️</button>
       </div>
 
-      <div class="info-card" style="padding:12px;margin-bottom:12px;text-align:center;font-size:13px;background:var(--primary-light)">
+      <div class="info-card" style="padding:12px;margin-bottom:12px;text-align:center;font-size:13px;background:#f8fafc">
         <span data-i18n="sem_label">学期</span>: <strong class="dispSem">-</strong> |
         <span data-i18n="week_label">周次</span>: <strong class="dispWeek">-</strong> |
         <span data-i18n="date_label">日期</span>: <strong class="dispDate">-</strong>
@@ -450,10 +474,10 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px}
       <div id="m_logCardContainer"></div>
 
       <div class="global-stats">
-        <div><span style="font-size:13px;color:var(--ink);font-weight:600" data-i18n="stat_total">全校总人数</span><br><strong id="m_globalTotal" style="font-size:20px;color:var(--primary)">-</strong></div>
-        <div><span style="font-size:13px;color:var(--ink);font-weight:600" data-i18n="stat_present">全级出席</span><br><strong id="m_globalPresent" style="font-size:20px;color:var(--success)">-</strong></div>
-        <div><span style="font-size:13px;color:var(--ink);font-weight:600" data-i18n="stat_absent">全级缺席</span><br><strong id="m_globalAbsent" style="font-size:20px;color:var(--danger)">-</strong></div>
-        <div><span style="font-size:13px;color:var(--ink);font-weight:600" data-i18n="stat_rate">全级出席率</span><br><strong id="m_globalPercent" style="font-size:20px;color:var(--info)">-</strong></div>
+        <div><span style="font-size:13px;color:var(--ink);font-weight:500" data-i18n="stat_total">全校总人数</span><br><strong id="m_globalTotal" style="font-size:22px;color:var(--primary)">-</strong></div>
+        <div><span style="font-size:13px;color:var(--ink);font-weight:500" data-i18n="stat_present">全级出席</span><br><strong id="m_globalPresent" style="font-size:22px;color:var(--success)">-</strong></div>
+        <div><span style="font-size:13px;color:var(--ink);font-weight:500" data-i18n="stat_absent">全级缺席</span><br><strong id="m_globalAbsent" style="font-size:22px;color:var(--danger)">-</strong></div>
+        <div><span style="font-size:13px;color:var(--ink);font-weight:500" data-i18n="stat_rate">全级出席率</span><br><strong id="m_globalPercent" style="font-size:22px;color:var(--primary)">-</strong></div>
       </div>
 
       <div class="absent-list-box">
@@ -472,7 +496,6 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px}
 
 <!-- ========== 打印容器 ========== -->
 <div id="printContainer" style="display:none">
-  <!-- 打印头部统一区域 -->
   <div class="print-header-wrap">
     <img id="printLogo" class="print-header-logo" src="" alt="校徽" style="display:none">
     <div id="printSchoolName" class="print-header-school">晏斗中华小学</div>
@@ -560,53 +583,33 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px}
 
     <!-- 学校设置 -->
     <h4 style="margin:5px 0 12px 0;color:var(--primary)" data-i18n="school_settings">🏫 学校设置</h4>
-    <div style="background:#fcf9f8;padding:16px;border-radius:12px;margin-bottom:20px;border:1px solid var(--border)">
+    <div style="background:#f8fafc;padding:16px;border-radius:8px;margin-bottom:20px;border:1px solid var(--border)">
       <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
         <div style="flex:2;min-width:180px">
-          <label style="font-size:13px;color:var(--ink);font-weight:600;display:block;margin-bottom:6px" data-i18n="school_name_label">学校名称</label>
-          <input type="text" id="schoolNameInput" placeholder="例如：晏斗中华小学" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;min-height:auto">
+          <label style="font-size:13px;color:var(--ink);font-weight:500;display:block;margin-bottom:6px" data-i18n="school_name_label">学校名称</label>
+          <input type="text" id="schoolNameInput" placeholder="例如：晏斗中华小学" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:6px;min-height:auto">
         </div>
         <div style="flex:1;min-width:140px">
-          <label style="font-size:13px;color:var(--ink);font-weight:600;display:block;margin-bottom:6px" data-i18n="school_logo_label">校徽</label>
-          <label style="display:block;background:var(--secondary);color:white;padding:10px 12px;text-align:center;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:background .2s" onmouseover="this.style.background='#e09252'" onmouseout="this.style.background='var(--secondary)'">
+          <label style="font-size:13px;color:var(--ink);font-weight:500;display:block;margin-bottom:6px" data-i18n="school_logo_label">校徽</label>
+          <label style="display:block;background:#fff;color:var(--ink);border:1px solid #cbd5e1;padding:10px 12px;text-align:center;border-radius:6px;font-size:13px;font-weight:500;cursor:pointer;transition:background .2s;box-shadow:0 1px 2px rgba(0,0,0,0.02)" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#fff'">
             <span data-i18n="btn_upload_logo">上传校徽</span>
             <input type="file" accept="image/*" onchange="uploadSchoolLogo(event)" style="display:none">
           </label>
         </div>
       </div>
       <div style="display:flex;gap:10px">
-        <button onclick="saveSchoolSettings()" style="flex:1;background:var(--success);color:white;border:none;padding:10px;border-radius:8px;font-size:13px;cursor:pointer" data-i18n="btn_save_settings">保存学校设置</button>
-        <button onclick="removeSchoolLogo()" style="flex:1;background:var(--danger);color:white;border:none;padding:10px;border-radius:8px;font-size:13px;cursor:pointer" data-i18n="btn_remove_logo">移除校徽</button>
+        <button onclick="saveSchoolSettings()" style="flex:1;background:var(--primary);color:white;border:none;padding:10px;border-radius:6px;font-size:13px;cursor:pointer" data-i18n="btn_save_settings">保存学校设置</button>
+        <button onclick="removeSchoolLogo()" style="flex:1;background:#fff;color:var(--danger);border:1px solid #fecaca;padding:10px;border-radius:6px;font-size:13px;cursor:pointer" data-i18n="btn_remove_logo">移除校徽</button>
       </div>
-    </div>
-
-    <!-- 教师账号管理 -->
-    <h4 style="margin:5px 0 12px 0;color:var(--primary)" data-i18n="teacher_management">👩‍🏫 教师账号管理</h4>
-    <div style="background:#fcf9f8;padding:16px;border-radius:12px;margin-bottom:20px;border:1px solid var(--border)">
-      <div style="display:flex;gap:12px;margin-bottom:12px;flex-wrap:wrap">
-        <div style="flex:2;min-width:160px">
-          <label style="font-size:13px;color:var(--ink);font-weight:600;display:block;margin-bottom:6px" data-i18n="teacher_email_label">教师邮箱</label>
-          <input type="email" id="newTeacherEmail" placeholder="teacher@school.com" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;min-height:auto">
-        </div>
-        <div style="flex:1;min-width:120px">
-          <label style="font-size:13px;color:var(--ink);font-weight:600;display:block;margin-bottom:6px" data-i18n="teacher_password_label">初始密码</label>
-          <input type="text" id="newTeacherPassword" placeholder="至少6位" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;min-height:auto">
-        </div>
-        <div style="flex:1;min-width:100px;display:flex;align-items:flex-end">
-          <button onclick="addTeacher()" style="width:100%;background:var(--success);color:white;border:none;padding:11px;border-radius:8px;font-size:13px;cursor:pointer" data-i18n="btn_add_teacher">添加教师</button>
-        </div>
-      </div>
-      <p style="font-size:12px;color:var(--muted);margin:0 0 12px 0;line-height:1.5" data-i18n="teacher_tip">添加教师后，系统会在 Supabase Auth 创建账号并在 user_roles 中写入 teacher 角色。教师首次登录后请自行修改密码。</p>
-      <div id="teacherManageList" style="max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;background:white"></div>
     </div>
 
     <!-- 教师班级分配 -->
     <h4 style="margin:5px 0 12px 0;color:var(--primary)" data-i18n="teacher_assignment">🔗 教师班级分配</h4>
-    <div style="background:#fcf9f8;padding:16px;border-radius:12px;margin-bottom:20px;border:1px solid var(--border)">
-      <label for="teacherSelect" style="font-size:13px;color:var(--ink);font-weight:600;display:block;margin-bottom:6px" data-i18n="select_teacher">选择教师账号</label>
-      <select id="teacherSelect" onchange="renderAssignmentChoices()" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;min-height:auto;margin-bottom:12px"></select>
+    <div style="background:#f8fafc;padding:16px;border-radius:8px;margin-bottom:20px;border:1px solid var(--border)">
+      <label for="teacherSelect" style="font-size:13px;color:var(--ink);font-weight:500;display:block;margin-bottom:6px" data-i18n="select_teacher">选择教师账号</label>
+      <select id="teacherSelect" onchange="renderAssignmentChoices()" style="width:100%;padding:10px;border:1px solid #cbd5e1;border-radius:6px;min-height:auto;margin-bottom:12px"></select>
       <div id="assignmentChoices" style="margin:12px 0;display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
-      <button onclick="saveAssignments()" style="width:100%;background:var(--info);color:white;border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer" data-i18n="btn_save_assignment">保存班级分配</button>
+      <button onclick="saveAssignments()" style="width:100%;background:var(--info);color:white;border:none;padding:12px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer" data-i18n="btn_save_assignment">保存班级分配</button>
     </div>
   </div>
 </div>
@@ -622,36 +625,36 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px}
     <!-- 班级管理 -->
     <h4 style="margin:5px 0 12px 0;color:var(--primary)" data-i18n="manage_classes">🏫 班级管理</h4>
     <div style="display:flex;gap:10px;margin-bottom:12px">
-      <input type="text" id="newClassName" placeholder="新班级名称" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;min-height:auto">
-      <button onclick="addClass()" style="background:var(--primary);color:white;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:600" data-i18n="btn_add">添加</button>
+      <input type="text" id="newClassName" placeholder="新班级名称" style="flex:1;padding:10px;border:1px solid #cbd5e1;border-radius:6px;min-height:auto">
+      <button onclick="addClass()" style="background:var(--primary);color:white;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:500" data-i18n="btn_add">添加</button>
     </div>
-    <div id="classManageList" style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-bottom:20px"></div>
+    <div id="classManageList" style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;margin-bottom:20px"></div>
 
     <!-- 学生管理 -->
     <h4 style="margin:20px 0 12px 0;color:var(--primary)" data-i18n="manage_students">👨‍🎓 学生管理</h4>
     <div style="display:flex;gap:10px;margin-bottom:12px">
-      <select id="manageClassSelect" onchange="renderStudentManageList()" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;min-height:auto"></select>
-      <button onclick="reorderStudentNumbers()" style="background:#a78b7a;color:white;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:600" data-i18n="btn_reorder">重排</button>
+      <select id="manageClassSelect" onchange="renderStudentManageList()" style="flex:1;padding:10px;border:1px solid #cbd5e1;border-radius:6px;min-height:auto"></select>
+      <button onclick="reorderStudentNumbers()" style="background:#fff;color:var(--ink);border:1px solid var(--border);padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:500" data-i18n="btn_reorder">重排</button>
     </div>
     <div style="display:flex;gap:10px;margin-bottom:12px">
-      <input type="text" id="newName" placeholder="学生姓名" style="flex:1;padding:10px;border:1px solid var(--border);border-radius:8px;min-height:auto">
-      <select id="newGender" style="width:70px;padding:10px;border:1px solid var(--border);border-radius:8px;min-height:auto">
+      <input type="text" id="newName" placeholder="学生姓名" style="flex:1;padding:10px;border:1px solid #cbd5e1;border-radius:6px;min-height:auto">
+      <select id="newGender" style="width:70px;padding:10px;border:1px solid #cbd5e1;border-radius:6px;min-height:auto">
         <option value="L">L</option>
         <option value="P">P</option>
       </select>
-      <button onclick="addStudent()" style="background:var(--success);color:white;border:none;padding:10px 16px;border-radius:8px;cursor:pointer;font-weight:600" data-i18n="btn_add">添加</button>
+      <button onclick="addStudent()" style="background:var(--success);color:white;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:500" data-i18n="btn_add">添加</button>
     </div>
-    <div id="studentManageList" style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px;margin-bottom:20px"></div>
+    <div id="studentManageList" style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;margin-bottom:20px"></div>
 
     <!-- CSV 导入 -->
-    <div style="background:#fcf9f8;padding:12px;border-radius:12px;border:1px solid var(--border)">
+    <div style="background:#f8fafc;padding:12px;border-radius:8px;border:1px solid var(--border)">
       <p style="font-size:13px;margin:0 0 12px 0;color:var(--ink);font-weight:500" data-i18n="csv_tip">上传 CSV 批量导入学生 (Class,Name,Gender)</p>
       <div style="display:flex;gap:10px">
-        <label style="flex:1;background:var(--info);color:white;padding:12px;text-align:center;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:background .2s" onmouseover="this.style.background='#916fa8'" onmouseout="this.style.background='var(--info)'">
+        <label style="flex:1;background:#fff;color:var(--ink);border:1px solid #cbd5e1;padding:12px;text-align:center;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;transition:background .2s;box-shadow:0 1px 2px rgba(0,0,0,0.02)" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='#fff'">
           <span data-i18n="btn_upload">上传 CSV</span>
           <input type="file" accept=".csv" onchange="importAllStudentsCSV(event)" style="display:none">
         </label>
-        <button onclick="downloadAllStudentsTemplate()" style="flex:1;background:var(--warning);color:var(--ink);border:none;padding:12px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer" data-i18n="btn_template">下载模板</button>
+        <button onclick="downloadAllStudentsTemplate()" style="flex:1;background:#fff;color:var(--ink);border:1px solid #cbd5e1;border:none;padding:12px;border-radius:6px;font-size:14px;font-weight:500;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.02)" data-i18n="btn_template">下载模板</button>
       </div>
     </div>
   </div>
@@ -754,21 +757,11 @@ const i18n = {
     invalid_backup: "备份文件格式不正确。",
     restore_confirm: "确定要恢复备份吗？当前云端数据不会被覆盖，但本地界面状态将重置。",
     backup_tip: "备份将导出所有班级、学生及出席记录（JSON 格式）。",
-    teacher_management: "👩‍🏫 教师账号管理",
-    teacher_email_label: "教师邮箱",
-    teacher_password_label: "初始密码",
-    btn_add_teacher: "添加教师",
-    teacher_tip: "添加教师后，系统会在 Supabase Auth 创建账号并在 user_roles 中写入 teacher 角色。教师首次登录后请自行修改密码。",
-    teacher_added: "✅ 教师账号已创建。",
-    teacher_exists: "此邮箱已存在。",
-    teacher_no_list: "尚无教师账号。",
-    delete_teacher_confirm: "确定删除教师账号？此操作会同时删除 user_roles 记录，但 Auth 用户需在 Supabase 后台手动删除。",
-    teacher_deleted: "✅ 教师角色记录已删除。Auth 用户请到 Supabase 后台移除。",
     teacher_assignment: "🔗 教师班级分配",
     select_teacher: "选择教师账号",
     btn_save_assignment: "保存班级分配",
     assignment_saved: "✅ 教师班级分配已保存。",
-    no_teachers_for_assignment: "请先建立教师账号。",
+    no_teachers_for_assignment: "请先在 Supabase 后台建立教师账号。",
     no_classes_for_assignment: "请先建立班级。",
     select_teacher_first: "请先选择教师账号。"
   },
@@ -854,21 +847,11 @@ const i18n = {
     invalid_backup: "Invalid backup file format.",
     restore_confirm: "Restore this backup? Cloud data will not be overwritten, but local UI state will reset.",
     backup_tip: "Backup exports all classes, students, and attendance records (JSON).",
-    teacher_management: "👩‍🏫 Teacher Accounts",
-    teacher_email_label: "Teacher Email",
-    teacher_password_label: "Initial Password",
-    btn_add_teacher: "Add Teacher",
-    teacher_tip: "Adding a teacher creates a Supabase Auth account and inserts a teacher role in user_roles. Teachers should change their password after first login.",
-    teacher_added: "✅ Teacher account created.",
-    teacher_exists: "This email already exists.",
-    teacher_no_list: "No teacher accounts yet.",
-    delete_teacher_confirm: "Delete teacher role record? The Auth user must be removed manually in the Supabase dashboard.",
-    teacher_deleted: "✅ Teacher role record deleted. Remove the Auth user in Supabase dashboard.",
     teacher_assignment: "🔗 Teacher Class Assignment",
     select_teacher: "Select Teacher Account",
     btn_save_assignment: "Save Assignments",
     assignment_saved: "✅ Teacher class assignments saved.",
-    no_teachers_for_assignment: "Please create teacher accounts first.",
+    no_teachers_for_assignment: "Please create teacher accounts in Supabase first.",
     no_classes_for_assignment: "Please create classes first.",
     select_teacher_first: "Please select a teacher account first."
   },
@@ -954,21 +937,11 @@ const i18n = {
     invalid_backup: "Format fail sandaran tidak sah.",
     restore_confirm: "Pulihkan sandaran ini? Data awan tidak akan ditimpa, tetapi keadaan UI setempat akan ditetapkan semula.",
     backup_tip: "Sandaran mengeksport semua kelas, pelajar dan rekod kehadiran (JSON).",
-    teacher_management: "👩‍🏫 Akaun Guru",
-    teacher_email_label: "E-mel Guru",
-    teacher_password_label: "Kata Laluan Awal",
-    btn_add_teacher: "Tambah Guru",
-    teacher_tip: "Menambah guru akan mencipta akaun Supabase Auth dan memasukkan peranan guru dalam user_roles. Guru perlu tukar kata laluan selepas log masuk pertama.",
-    teacher_added: "✅ Akaun guru dicipta.",
-    teacher_exists: "E-mel ini sudah wujud.",
-    teacher_no_list: "Tiada akaun guru lagi.",
-    delete_teacher_confirm: "Padam rekod peranan guru? Pengguna Auth perlu dibuang secara manual di papan pemuka Supabase.",
-    teacher_deleted: "✅ Rekod peranan guru dipadam. Buang pengguna Auth di papan pemuka Supabase.",
     teacher_assignment: "🔗 Penetapan Kelas Guru",
     select_teacher: "Pilih Akaun Guru",
     btn_save_assignment: "Simpan Penetapan",
     assignment_saved: "✅ Penetapan kelas guru disimpan.",
-    no_teachers_for_assignment: "Sila cipta akaun guru terlebih dahulu.",
+    no_teachers_for_assignment: "Sila cipta akaun guru di Supabase terlebih dahulu.",
     no_classes_for_assignment: "Sila cipta kelas terlebih dahulu.",
     select_teacher_first: "Sila pilih akaun guru terlebih dahulu."
   }
@@ -1049,10 +1022,11 @@ function applySchoolSettings() {
   const inp = $("schoolNameInput");
   if (inp) inp.value = schoolSettings.name || "";
 
-  // 同步更新打印区域的头部信息
+  // 同步更新打印区域的头部信息（包含校徽、学校名称、日志标题）
   const printLogo = $("printLogo");
   const printSchoolName = $("printSchoolName");
   const printLogTitle = $("printLogTitle");
+  
   if (printSchoolName) printSchoolName.textContent = schoolSettings.name || "晏斗中华小学";
   if (printLogo) {
     if (schoolSettings.logo) {
@@ -1113,7 +1087,6 @@ function applyLanguage() {
   if ($("manageSchoolModal").style.display === 'flex' || $("manageStudentModal").style.display === 'flex') {
     renderClassManageList();
     renderStudentManageList();
-    renderTeacherManageList();
   }
 }
 
@@ -1508,7 +1481,7 @@ function renderDesktopLog() {
   `).join("");
 
   tbody.innerHTML += `
-    <tr style="font-weight:bold;background:#fcf9f8">
+    <tr style="font-weight:bold;background:#f8fafc">
       <td>${t('total_label')}</td><td>${grand.totalL}</td><td>${grand.totalP}</td>
       <td>${grand.pL}</td><td>${grand.pP}</td><td>${grand.aL}</td><td>${grand.aP}</td><td></td><td></td>
     </tr>
@@ -1874,7 +1847,6 @@ async function restoreData(event) {
       if (currentRole === "admin") {
         renderClassManageList();
         renderStudentManageList();
-        renderTeacherManageList();
       }
     } catch (err) {
       alert("恢复失败：" + err.message);
@@ -1893,9 +1865,7 @@ function openManageModal(type) {
   if (type === 'school') {
     $("manageSchoolModal").style.display = "flex";
     $("schoolNameInput").value = schoolSettings.name || "";
-    renderClassManageList();
     updateClassDropdowns();
-    renderTeacherManageList();
     loadTeachers().then(() => renderAssignmentChoices());
   } else {
     $("manageStudentModal").style.display = "flex";
@@ -1918,8 +1888,8 @@ function renderClassManageList() {
     return `<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid var(--border);font-size:14px">
       <span><strong>${esc(c.name)}</strong> (${count})</span>
       <div>
-        <button onclick="renameClass('${c.id}')" style="color:var(--info);border:none;background:none;cursor:pointer;padding:2px 8px;font-weight:600">改名</button>
-        <button onclick="deleteClass('${c.id}')" style="color:var(--danger);border:none;background:none;cursor:pointer;padding:2px 8px;font-weight:600">删除</button>
+        <button onclick="renameClass('${c.id}')" style="color:var(--info);border:none;background:none;cursor:pointer;padding:2px 8px;font-weight:500;box-shadow:none;">改名</button>
+        <button onclick="deleteClass('${c.id}')" style="color:var(--danger);border:none;background:none;cursor:pointer;padding:2px 8px;font-weight:500;box-shadow:none;">删除</button>
       </div>
     </div>`;
   }).join("") || `<p class="muted" style="padding:12px;text-align:center">暂无班级</p>`;
@@ -1986,107 +1956,12 @@ async function renderStudentManageList() {
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid var(--border);font-size:14px;gap:8px;flex-wrap:wrap">
       <span style="flex:1;min-width:120px">#${s.student_no} ${esc(s.name)} (${esc(s.gender)})</span>
       <div style="display:flex;gap:4px;flex-wrap:wrap">
-        <button onclick="editStudentInline('${s.id}')" style="color:var(--info);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:600">编辑</button>
-        <button onclick="moveStudentInline('${s.id}')" style="color:var(--secondary);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:600">调班</button>
-        <button onclick="deleteStudent('${s.id}','${esc(s.name)}')" style="color:var(--danger);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:600">删除</button>
+        <button onclick="editStudentInline('${s.id}')" style="color:var(--info);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:500;box-shadow:none;">编辑</button>
+        <button onclick="moveStudentInline('${s.id}')" style="color:var(--secondary);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:500;box-shadow:none;">调班</button>
+        <button onclick="deleteStudent('${s.id}','${esc(s.name)}')" style="color:var(--danger);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:500;box-shadow:none;">删除</button>
       </div>
     </div>
   `).join("") || `<p class="muted" style="padding:12px;text-align:center">暂无学生</p>`;
-}
-
-/* ---------- 教师账号管理 ---------- */
-async function renderTeacherManageList() {
-  const list = $("teacherManageList");
-  if (!list) return;
-  const { data, error } = await supabaseClient
-    .from("user_roles")
-    .select("user_id,email,role")
-    .eq("role", "teacher")
-    .order("email");
-  if (error) { list.innerHTML = `<p class="muted" style="padding:12px;text-align:center">读取教师失败：${esc(error.message)}</p>`; return; }
-  teachers = data || [];
-  if (!teachers.length) {
-    list.innerHTML = `<p class="muted" style="padding:12px;text-align:center">${t('teacher_no_list')}</p>`;
-    return;
-  }
-  list.innerHTML = teachers.map(t => `
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid var(--border);font-size:13px;gap:8px;flex-wrap:wrap">
-      <span style="flex:1;min-width:140px">${esc(t.email || t.user_id)}</span>
-      <button onclick="deleteTeacherRole('${t.user_id}')" style="color:var(--danger);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:600">删除角色</button>
-    </div>
-  `).join("");
-}
-
-async function addTeacher() {
-  if (currentRole !== "admin") return;
-  const email = $("newTeacherEmail").value.trim().toLowerCase();
-  const password = $("newTeacherPassword").value.trim();
-  if (!email) return alert("请输入教师邮箱");
-  if (!password || password.length < 6) return alert("初始密码至少 6 位");
-
-  // 检查是否已存在
-  const { data: existing, error: existErr } = await supabaseClient
-    .from("user_roles")
-    .select("user_id")
-    .eq("email", email)
-    .maybeSingle();
-  if (existErr) { alert("检查邮箱失败：" + existErr.message); return; }
-  if (existing) { alert(t('teacher_exists')); return; }
-
-  try {
-    // 1) 创建 Auth 用户
-    const { data: authData, error: authErr } = await supabaseClient.auth.signUp({
-      email,
-      password,
-      options: { email_confirm: true }
-    });
-    if (authErr) {
-      alert("创建账号失败：" + authErr.message);
-      return;
-    }
-    const newUserId = authData.user?.id;
-    if (!newUserId) {
-      alert("创建账号失败：未返回用户 ID。");
-      return;
-    }
-
-    // 2) 写入 user_roles
-    const { error: roleErr } = await supabaseClient.from("user_roles").insert({
-      user_id: newUserId,
-      email,
-      role: "teacher"
-    });
-    if (roleErr) {
-      alert("写入教师角色失败：" + roleErr.message);
-      return;
-    }
-
-    // 3) 恢复管理员会话
-    await supabaseClient.auth.signInWithPassword({
-      email: currentUser.email,
-      password: prompt("请重新输入管理员密码以恢复会话：", "")
-    });
-
-    alert(t('teacher_added'));
-    $("newTeacherEmail").value = "";
-    $("newTeacherPassword").value = "";
-    renderTeacherManageList();
-    await loadTeachers();
-    renderAssignmentChoices();
-  } catch (err) {
-    alert("添加教师失败：" + err.message);
-  }
-}
-
-async function deleteTeacherRole(userId) {
-  if (currentRole !== "admin") return;
-  if (!confirm(t('delete_teacher_confirm'))) return;
-  const { error } = await supabaseClient.from("user_roles").delete().eq("user_id", userId);
-  if (error) { alert("删除失败：" + error.message); return; }
-  alert(t('teacher_deleted'));
-  renderTeacherManageList();
-  await loadTeachers();
-  renderAssignmentChoices();
 }
 
 /* ---------- 教师班级分配 ---------- */
@@ -2128,7 +2003,7 @@ async function renderAssignmentChoices() {
   }
 
   choicesDiv.innerHTML = [...classes].sort((a,b)=>a.name.localeCompare(b.name)).map(c => `
-    <label style="display:flex;gap:8px;align-items:center;padding:6px 10px;background:#fff;border:1px solid var(--border);border-radius:6px;font-size:13px;cursor:pointer">
+    <label style="display:flex;gap:8px;align-items:center;padding:8px 12px;background:#fff;border:1px solid #cbd5e1;border-radius:6px;font-size:13px;cursor:pointer;transition:border-color .2s" onmouseover="this.style.borderColor='var(--primary)'" onmouseout="this.style.borderColor='#cbd5e1'">
       <input style="width:auto;min-height:auto;margin:0" type="checkbox" value="${c.id}" ${assignedIds.has(c.id) ? "checked" : ""}>
       ${esc(c.name)}
     </label>
@@ -2379,7 +2254,6 @@ async function loadAdminData() {
   await loadTeachers();
   renderClassManageList();
   renderStudentManageList();
-  renderTeacherManageList();
 }
 
 async function loadTeachers() {
