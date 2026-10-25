@@ -309,7 +309,7 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
   </div>
   <div class="user-controls">
     <span id="userBadge" class="pill hidden"></span>
-    <button id="logoutBtn" class="secondary hidden" onclick="signOut()">登出</button>
+    <button id="logoutBtn" class="secondary hidden" onclick="signOut()" data-i18n="logout_btn">登出</button>
     <div class="lang-switcher">
       <select id="langSelect" onchange="changeLanguage()">
         <option value="zh">中文</option>
@@ -697,7 +697,7 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
     <!-- 班级管理 -->
     <h4 style="margin:5px 0 12px 0;color:var(--primary)" data-i18n="manage_classes">🏫 班级管理</h4>
     <div style="display:flex;gap:10px;margin-bottom:12px">
-      <input type="text" id="newClassName" placeholder="新班级名称" style="flex:1;padding:10px;border:1px solid #cbd5e1;border-radius:6px;min-height:auto">
+      <input type="text" id="newClassName" data-i18n-placeholder="ph_new_class" placeholder="新班级名称" style="flex:1;padding:10px;border:1px solid #cbd5e1;border-radius:6px;min-height:auto">
       <button onclick="addClass()" style="background:var(--primary);color:white;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-weight:500" data-i18n="btn_add">添加</button>
     </div>
     <div id="classManageList" style="max-height:180px;overflow-y:auto;border:1px solid var(--border);border-radius:6px;margin-bottom:20px"></div>
@@ -716,7 +716,7 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
     </div>
 
     <div style="display:flex;gap:10px;margin-bottom:12px">
-      <input type="text" id="newName" placeholder="学生姓名" style="flex:1;padding:10px;border:1px solid #cbd5e1;border-radius:6px;min-height:auto">
+      <input type="text" id="newName" data-i18n-placeholder="ph_student_name" placeholder="学生姓名" style="flex:1;padding:10px;border:1px solid #cbd5e1;border-radius:6px;min-height:auto">
       <select id="newGender" style="width:70px;padding:10px;border:1px solid #cbd5e1;border-radius:6px;min-height:auto">
         <option value="L">L</option>
         <option value="P">P</option>
@@ -763,6 +763,7 @@ const CONFIG_READY = SUPABASE_URL.startsWith("https://") &&
 const i18n = {
   zh: {
     app_title: "学校出席与日志系统",
+    logout_btn: "登出",
     login_title: "账号登录",
     login_desc: "请使用管理员或教师账号登录。没有获分配班级的教师不会看到任何班级资料。",
     login_email: "邮箱",
@@ -861,10 +862,13 @@ const i18n = {
     dash_rate_lbl: "整体出席率",
     dash_class_rate_lbl: "各班级出席率概览",
     dash_absent_title: "🚨 全校缺席名单监控",
-    dash_all_present: "🎉 今日全员出席"
+    dash_all_present: "🎉 今日全员出席",
+    ph_new_class: "新班级名称",
+    ph_student_name: "学生姓名"
   },
   en: {
     app_title: "School Attendance & Log System",
+    logout_btn: "Logout",
     login_title: "Account Login",
     login_desc: "Please log in with an admin or teacher account. Teachers without assigned classes will not see any class data.",
     login_email: "Email",
@@ -919,8 +923,8 @@ const i18n = {
     manage_students: "👨‍🎓 Manage Students",
     btn_add: "Add",
     btn_reorder: "Reorder",
-    btn_promote: "🎓 Promote Class (Naik Kelas)",
-    btn_graduate: "🎉 Graduate (Tamat Transisi)",
+    btn_promote: "🎓 Promote Class",
+    btn_graduate: "🎉 Graduate (Tamat)",
     show_inactive_lbl: "Show graduated/inactive students",
     days: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],
     students_count: "students",
@@ -963,10 +967,13 @@ const i18n = {
     dash_rate_lbl: "Overall Rate",
     dash_class_rate_lbl: "Class Attendance Overview",
     dash_absent_title: "🚨 Absentee Monitoring",
-    dash_all_present: "🎉 All present today"
+    dash_all_present: "🎉 All present today",
+    ph_new_class: "New class name",
+    ph_student_name: "Student name"
   },
   ms: {
     app_title: "Sistem Kehadiran & Log Sekolah",
+    logout_btn: "Log Keluar",
     login_title: "Log Masuk Akaun",
     login_desc: "Sila log masuk dengan akaun admin atau guru. Guru tanpa kelas yang ditetapkan tidak akan melihat sebarang data kelas.",
     login_email: "E-mel",
@@ -1065,7 +1072,9 @@ const i18n = {
     dash_rate_lbl: "Kadar Keseluruhan",
     dash_class_rate_lbl: "Gambaran Kehadiran Kelas",
     dash_absent_title: "🚨 Pemantauan Tidak Hadir",
-    dash_all_present: "🎉 Semua hadir hari ini"
+    dash_all_present: "🎉 Semua hadir hari ini",
+    ph_new_class: "Nama kelas baru",
+    ph_student_name: "Nama pelajar"
   }
 };
 
@@ -1202,6 +1211,10 @@ function applyLanguage() {
   document.querySelectorAll('[data-i18n]').forEach(el => {
     const key = el.getAttribute('data-i18n');
     if (i18n[currentLang][key]) el.innerHTML = i18n[currentLang][key];
+  });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (i18n[currentLang][key]) el.placeholder = i18n[currentLang][key];
   });
   applySchoolSettings(); // 更新标题和打印头部
   updateWeekAndSemesterDisplay();
@@ -2019,11 +2032,16 @@ function renderClassManageList() {
     return `<div style="display:flex;justify-content:space-between;padding:10px;border-bottom:1px solid var(--border);font-size:14px">
       <span><strong>${esc(c.name)}</strong> (${count})</span>
       <div>
-        <button onclick="renameClass('${c.id}')" style="color:var(--info);border:none;background:none;cursor:pointer;padding:2px 8px;font-weight:500;box-shadow:none;">改名</button>
-        <button onclick="deleteClass('${c.id}')" style="color:var(--danger);border:none;background:none;cursor:pointer;padding:2px 8px;font-weight:500;box-shadow:none;">删除</button>
+        <button onclick="renameClass('${c.id}')" style="color:var(--info);border:none;background:none;cursor:pointer;padding:2px 8px;font-weight:500;box-shadow:none;" data-i18n="btn_edit_name">改名</button>
+        <button onclick="deleteClass('${c.id}')" style="color:var(--danger);border:none;background:none;cursor:pointer;padding:2px 8px;font-weight:500;box-shadow:none;" data-i18n="btn_delete">删除</button>
       </div>
     </div>`;
   }).join("") || `<p class="muted" style="padding:12px;text-align:center">暂无班级</p>`;
+  // 重新翻译动态生成的按钮
+  list.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (i18n[currentLang][key]) el.innerHTML = i18n[currentLang][key];
+  });
 }
 
 async function addClass() {
@@ -2097,12 +2115,18 @@ async function renderStudentManageList() {
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;border-bottom:1px solid var(--border);font-size:14px;gap:8px;flex-wrap:wrap;opacity:${opacity}">
       <span style="flex:1;min-width:120px">#${s.student_no} ${esc(s.name)} (${esc(s.gender)}) ${statusLbl}</span>
       <div style="display:flex;gap:4px;flex-wrap:wrap">
-        <button onclick="editStudentInline('${s.id}')" style="color:var(--info);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:500;box-shadow:none;">编辑</button>
-        <button onclick="moveStudentInline('${s.id}')" style="color:var(--secondary);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:500;box-shadow:none;">调班</button>
-        <button onclick="deleteStudent('${s.id}','${esc(s.name)}')" style="color:var(--danger);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:500;box-shadow:none;">删除</button>
+        <button onclick="editStudentInline('${s.id}')" style="color:var(--info);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:500;box-shadow:none;" data-i18n="btn_edit">编辑</button>
+        <button onclick="moveStudentInline('${s.id}')" style="color:var(--secondary);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:500;box-shadow:none;" data-i18n="move_class">调班</button>
+        <button onclick="deleteStudent('${s.id}','${esc(s.name)}')" style="color:var(--danger);border:none;background:none;cursor:pointer;padding:2px 6px;font-size:12px;font-weight:500;box-shadow:none;" data-i18n="btn_delete">删除</button>
       </div>
     </div>
   `}).join("") || `<p class="muted" style="padding:12px;text-align:center">暂无学生</p>`;
+
+  // 重新翻译动态生成的按钮
+  list.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (i18n[currentLang][key]) el.innerHTML = i18n[currentLang][key];
+  });
 }
 
 /* ---------- 批量操作：升级与毕业 ---------- */
