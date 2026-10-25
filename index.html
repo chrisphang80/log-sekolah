@@ -66,14 +66,12 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
 .top-nav h1{font-size:18px;margin:0;display:flex;align-items:center;gap:12px;font-weight:600;color:var(--primary)}
 .top-nav small{opacity:.7;display:block;margin-top:2px;font-size:12px;color:var(--muted)}
 
-/* 限制顶部校徽的最大尺寸，防止撑破页面 */
 #schoolLogo{
   width:36px;height:36px;max-width:36px;max-height:36px;
   object-fit:contain;border-radius:6px;background:#f1f5f9;padding:2px;
   border:1px solid var(--border);flex-shrink:0;
 }
 
-/* 修复移动端顶部导航排列 */
 .top-nav .user-controls {
   display:flex; align-items:center; gap:12px; flex-wrap:nowrap;
 }
@@ -114,7 +112,6 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
   .form-group label{display:block;font-size:13px;font-weight:500;color:var(--ink);margin-bottom:6px}
   .info-display{background:#f8fafc;padding:12px;border-radius:8px;margin-bottom:16px;font-size:13px;display:flex;justify-content:space-between;border:1px solid var(--border);color:var(--ink)}
   
-  /* 整齐划一的 2x2 网格布局 */
   .batch-buttons{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
   .batch-buttons button{
     padding:10px;
@@ -139,7 +136,6 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
   .btn-restore{background:#78716c;color:white}
   .btn-restore:hover{background:#57534e}
   
-  /* 桌面端学生卡片：专业网格 */
   .student-list{
     display:grid;
     grid-template-columns:repeat(auto-fill,minmax(150px,1fr));
@@ -159,7 +155,6 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
   .student-card .gender{font-size:12px;color:var(--muted);display:block;margin-top:4px}
   .btn-save{width:100%;padding:14px;background:var(--primary);color:white;border:none;border-radius:8px;font-size:15px;cursor:pointer;font-weight:600;margin-top:auto;box-shadow:0 2px 4px rgba(30,58,138,0.2)}
 
-  /* 日志表格：专业数据表风格 */
   .log-header{text-align:center;font-size:20px;font-weight:600;margin-bottom:16px;letter-spacing:0.5px;color:var(--ink)}
   .info-row{display:flex;border:1px solid var(--border);border-bottom:none;border-radius:8px 8px 0 0;overflow:hidden;background:#f8fafc}
   .info-row>div{flex:1;padding:10px;text-align:center;border-right:1px solid var(--border);font-size:13px;font-weight:500;color:var(--secondary)}
@@ -245,12 +240,10 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
   .top-nav,.desktop-container,.mobile-only,.modal-overlay{display:none!important}
   #printContainer{display:block!important;width:100%!important;margin:0!important;padding:0!important}
   
-  /* 打印头部排版（包含校徽和校名） */
   .print-header-wrap{
     display:flex;flex-direction:column;align-items:center;justify-content:center;
     margin-bottom:16px;text-align:center;
   }
-  /* 限制打印时校徽的最大尺寸 */
   .print-header-logo{
     max-height:60px;max-width:120px;object-fit:contain;margin-bottom:8px;
     display:block;
@@ -1233,6 +1226,9 @@ async function enterApp(user) {
     await loadAdminGlobalData();
   }
   renderAllViews();
+  
+  // 🔥 开启实时监听：任何设备一保存数据，这里会自动更新
+  setupRealtimeSubscription();
 }
 
 /* ============================================================
@@ -2265,6 +2261,38 @@ async function loadTeachers() {
     .order("email");
   if (error) { showStatus("appStatus", "读取教师账号失败：" + error.message, "error"); return; }
   teachers = data || [];
+}
+
+/* ============================================================
+   ⚡ 实时同步（Realtime）：跨设备立即更新
+   ============================================================ */
+function setupRealtimeSubscription() {
+  supabaseClient
+    .channel('schema-db-changes')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'attendance_records' },
+      async (payload) => {
+        console.log('Realtime update received:', payload);
+        // 当有记录保存时，检查是否是当前日期
+        if (payload.new && payload.new.attendance_date === selectedDate()) {
+          if (currentRole === "admin") {
+            await loadAdminGlobalData();
+          } else if (selectedClassId) {
+            await loadAttendance();
+          }
+          renderAllViews();
+          
+          // 给电脑端的用户一个微小提示
+          if (!isMobile) {
+            showStatus("appStatus", `⚡ 检测到有新点名数据同步更新（${new Date().toLocaleTimeString()}）`, "ok");
+          }
+        }
+      }
+    )
+    .subscribe((status) => {
+      console.log('Realtime status:', status);
+    });
 }
 
 /* ============================================================
