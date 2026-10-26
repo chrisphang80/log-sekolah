@@ -611,10 +611,36 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
       <button class="close-btn" onclick="closeDashboardModal()">×</button>
     </div>
 
+    <!-- 视图切换 Tabs -->
+    <div style="display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--border);padding-bottom:12px;overflow-x:auto">
+      <button id="btnDashToday" onclick="switchDashTab('today')" style="flex:1;padding:8px;background:var(--primary);color:white;border:none;border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap" data-i18n="dash_tab_today">今日概览</button>
+      <button id="btnDashWeekly" onclick="switchDashTab('weekly')" style="flex:1;padding:8px;background:#fff;color:var(--ink);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap" data-i18n="dash_tab_weekly">按周统计</button>
+      <button id="btnDashMonthly" onclick="switchDashTab('monthly')" style="flex:1;padding:8px;background:#fff;color:var(--ink);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap" data-i18n="dash_tab_monthly">按月统计</button>
+      <button id="btnDashYearly" onclick="switchDashTab('yearly')" style="flex:1;padding:8px;background:#fff;color:var(--ink);border:1px solid var(--border);border-radius:6px;cursor:pointer;font-size:13px;white-space:nowrap" data-i18n="dash_tab_yearly">按年统计</button>
+    </div>
+
+    <!-- 筛选区域 -->
+    <div id="dashFilterArea" class="hidden" style="background:#f8fafc;padding:12px;border-radius:8px;border:1px solid var(--border);margin-bottom:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+      <div id="dashSelectWeekWrap" class="hidden" style="flex:1;min-width:150px">
+        <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px" data-i18n="dash_select_week_lbl">选择周次（周一至周五）</label>
+        <select id="dashWeekSelect" onchange="renderDashboard()" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px"></select>
+      </div>
+      <div id="dashSelectMonthWrap" class="hidden" style="flex:1;min-width:150px">
+        <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px" data-i18n="dash_select_month_lbl">选择月份</label>
+        <input type="month" id="dashMonthInput" onchange="renderDashboard()" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px">
+      </div>
+      <div id="dashSelectYearWrap" class="hidden" style="flex:1;min-width:150px">
+        <label style="display:block;font-size:12px;color:var(--muted);margin-bottom:4px" data-i18n="dash_select_year_lbl">选择年份</label>
+        <input type="number" id="dashYearInput" min="2020" max="2100" onchange="renderDashboard()" style="width:100%;padding:8px;border:1px solid #cbd5e1;border-radius:6px;font-size:13px">
+      </div>
+    </div>
+
+    <div id="dashLoading" class="hidden" style="text-align:center;padding:20px;color:var(--muted)" data-i18n="dash_loading">加载数据中...</div>
+
     <!-- 核心指标卡 -->
     <div class="dash-kpi-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px">
       <div class="dash-kpi-card" style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:16px;text-align:center">
-        <div style="font-size:13px;color:var(--muted);margin-bottom:8px" data-i18n="dash_total_lbl">总人数</div>
+        <div id="dash_total_lbl" style="font-size:13px;color:var(--muted);margin-bottom:8px" data-i18n="dash_total_lbl">总人数</div>
         <div id="dash_total" style="font-size:24px;font-weight:700;color:var(--primary)">-</div>
       </div>
       <div class="dash-kpi-card" style="background:var(--success-light);border:1px solid #a7f3d0;border-radius:8px;padding:16px;text-align:center">
@@ -637,10 +663,12 @@ small.note{display:block;color:var(--muted);line-height:1.55;margin-top:8px;font
       <!-- 由 JS 动态生成进度条 -->
     </div>
 
-    <!-- 全校缺席监控名单 -->
-    <h4 class="dash-section-title" style="margin:0 0 12px 0;font-size:15px;color:var(--danger)" data-i18n="dash_absent_title">🚨 全校缺席名单监控</h4>
-    <div id="dash_absent_list" style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;max-height:200px;overflow-y:auto;padding:12px">
-      <!-- 由 JS 动态生成 -->
+    <!-- 全校缺席监控名单 (仅今日视图显示) -->
+    <div id="dashAbsentListContainer">
+      <h4 class="dash-section-title" style="margin:0 0 12px 0;font-size:15px;color:var(--danger)" data-i18n="dash_absent_title">🚨 全校缺席名单监控</h4>
+      <div id="dash_absent_list" style="background:#f8fafc;border:1px solid var(--border);border-radius:8px;max-height:200px;overflow-y:auto;padding:12px">
+        <!-- 由 JS 动态生成 -->
+      </div>
     </div>
   </div>
 </div>
@@ -906,7 +934,21 @@ const i18n = {
     err_read_student_data_fail: "读取学生失败。",
     err_name_empty: "姓名不能为空。",
     err_gender_only: "性别只能是 L 或 P。",
-    err_update_fail: "更新失败："
+    err_update_fail: "更新失败：",
+    
+    // 新增：Dashboard 周/月/年报
+    dash_tab_today: "今日概览",
+    dash_tab_weekly: "按周统计",
+    dash_tab_monthly: "按月统计",
+    dash_tab_yearly: "按年统计",
+    dash_select_week_lbl: "选择周次（周一至周五）",
+    dash_select_month_lbl: "选择月份",
+    dash_select_year_lbl: "选择年份",
+    dash_loading: "加载数据中...",
+    dash_week_opt: "第 {week} 周",
+    dash_no_data_period: "此时段无点名数据",
+    dash_avg_rate: "平均出席率",
+    dash_total_days: "总计 {days} 个工作日记录"
   },
   en: {
     app_title: "School Attendance & Log System",
@@ -1052,7 +1094,20 @@ const i18n = {
     err_read_student_data_fail: "Failed to read student data.",
     err_name_empty: "Name cannot be empty.",
     err_gender_only: "Gender must be L or P.",
-    err_update_fail: "Update failed: "
+    err_update_fail: "Update failed: ",
+    
+    dash_tab_today: "Today's Overview",
+    dash_tab_weekly: "Weekly Stats",
+    dash_tab_monthly: "Monthly Stats",
+    dash_tab_yearly: "Yearly Stats",
+    dash_select_week_lbl: "Select Week (Mon-Fri)",
+    dash_select_month_lbl: "Select Month",
+    dash_select_year_lbl: "Select Year",
+    dash_loading: "Loading data...",
+    dash_week_opt: "Week {week}",
+    dash_no_data_period: "No attendance data for this period",
+    dash_avg_rate: "Average Rate",
+    dash_total_days: "{days} working days of records"
   },
   ms: {
     app_title: "Sistem Kehadiran & Log Sekolah",
@@ -1198,7 +1253,20 @@ const i18n = {
     err_read_student_data_fail: "Gagal baca data pelajar.",
     err_name_empty: "Nama tidak boleh kosong.",
     err_gender_only: "Jantina mesti L atau P.",
-    err_update_fail: "Gagal kemas kini: "
+    err_update_fail: "Gagal kemas kini: ",
+    
+    dash_tab_today: "Gambaran Hari Ini",
+    dash_tab_weekly: "Statistik Mingguan",
+    dash_tab_monthly: "Statistik Bulanan",
+    dash_tab_yearly: "Statistik Tahunan",
+    dash_select_week_lbl: "Pilih Minggu (Isnin-Jumaat)",
+    dash_select_month_lbl: "Pilih Bulan",
+    dash_select_year_lbl: "Pilih Tahun",
+    dash_loading: "Memuatkan data...",
+    dash_week_opt: "Minggu {week}",
+    dash_no_data_period: "Tiada data kehadiran untuk tempoh ini",
+    dash_avg_rate: "Kadar Purata",
+    dash_total_days: "{days} hari bekerja rekod"
   }
 };
 
@@ -1218,6 +1286,9 @@ let currentDateStr = "";
 let isMobile = window.innerWidth < 768;
 let schoolSettings = JSON.parse(localStorage.getItem('schoolSettings') || '{"name":"","logo":""}');
 let adminGlobalData = []; // 管理员专用：全校所有班级的数据
+
+let currentDashTab = 'today'; // 'today', 'weekly', 'monthly', 'yearly'
+let dashFilterDate = new Date(); // 用于周/月筛选的基准日期
 
 // 学期定义
 const sem1Start = new Date(2026, 0, 12);
@@ -1259,6 +1330,14 @@ function tFormat(key, vars) {
     }
   }
   return str;
+}
+
+// 计算某日期所在周的周一
+function getMonday(d) {
+  d = new Date(d);
+  const day = d.getDay();
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1); // adjust when day is sunday
+  return new Date(d.setDate(diff));
 }
 
 /* ============================================================
@@ -1408,7 +1487,7 @@ function syncDate(source) {
   } else {
     renderAllViews();
   }
-  if ($("dashboardModal").style.display === 'flex') {
+  if ($("dashboardModal").style.display === 'flex' && currentDashTab === 'today') {
     renderDashboard();
   }
 }
@@ -2669,69 +2748,277 @@ function setupRealtimeSubscription() {
    ============================================================ */
 function openDashboardModal() {
   $("dashboardModal").style.display = "flex";
-  renderDashboard();
+  
+  // 初始化周/月/年的选择器默认值为当前选中日期
+  const d = new Date(selectedDate());
+  $("dashWeekSelect").value = selectedDate();
+  $("dashMonthInput").value = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2, '0')}`;
+  $("dashYearInput").value = d.getFullYear();
+  
+  switchDashTab('today');
 }
 function closeDashboardModal() {
   $("dashboardModal").style.display = "none";
 }
 
-function renderDashboard() {
-  const { data, grand, absentList } = computeLogData();
+function switchDashTab(tab) {
+  currentDashTab = tab;
   
-  // 更新 KPI 指标卡
-  const total = grand.totalL + grand.totalP;
-  const present = grand.pL + grand.pP;
-  const absent = grand.aL + grand.aP;
-  const rate = total > 0 ? ((present / total) * 100).toFixed(2) + "%" : "-";
+  // 按钮样式切换
+  const btnToday = $("btnDashToday");
+  const btnWeekly = $("btnDashWeekly");
+  const btnMonthly = $("btnDashMonthly");
+  const btnYearly = $("btnDashYearly");
   
-  if ($("dash_total")) $("dash_total").innerText = total;
-  if ($("dash_present")) $("dash_present").innerText = present;
-  if ($("dash_absent")) $("dash_absent").innerText = absent;
-  if ($("dash_rate")) $("dash_rate").innerText = rate;
+  [btnToday, btnWeekly, btnMonthly, btnYearly].forEach(btn => {
+    btn.style.background = '#fff';
+    btn.style.color = 'var(--ink)';
+    btn.style.border = '1px solid var(--border)';
+  });
+  
+  let activeBtn;
+  if (tab === 'today') activeBtn = btnToday;
+  else if (tab === 'weekly') activeBtn = btnWeekly;
+  else if (tab === 'monthly') activeBtn = btnMonthly;
+  else activeBtn = btnYearly;
+  
+  activeBtn.style.background = 'var(--primary)';
+  activeBtn.style.color = 'white';
+  activeBtn.style.border = 'none';
 
-  // 更新班级出席率对比图
+  // 筛选器显示/隐藏
+  if (tab === 'today') {
+    $("dashFilterArea").classList.add('hidden');
+    $("dashSelectWeekWrap").classList.add('hidden');
+    $("dashSelectMonthWrap").classList.add('hidden');
+    $("dashSelectYearWrap").classList.add('hidden');
+    $("dashAbsentListContainer").classList.remove('hidden');
+  } else if (tab === 'weekly') {
+    $("dashFilterArea").classList.remove('hidden');
+    $("dashSelectWeekWrap").classList.remove('hidden');
+    $("dashSelectMonthWrap").classList.add('hidden');
+    $("dashSelectYearWrap").classList.add('hidden');
+    $("dashAbsentListContainer").classList.add('hidden'); // 周报不显示缺席名单
+    populateWeekOptions();
+  } else if (tab === 'monthly') {
+    $("dashFilterArea").classList.remove('hidden');
+    $("dashSelectWeekWrap").classList.add('hidden');
+    $("dashSelectMonthWrap").classList.remove('hidden');
+    $("dashSelectYearWrap").classList.add('hidden');
+    $("dashAbsentListContainer").classList.add('hidden'); // 月报不显示缺席名单
+  } else {
+    $("dashFilterArea").classList.remove('hidden');
+    $("dashSelectWeekWrap").classList.add('hidden');
+    $("dashSelectMonthWrap").classList.add('hidden');
+    $("dashSelectYearWrap").classList.remove('hidden');
+    $("dashAbsentListContainer").classList.add('hidden'); // 年报不显示缺席名单
+  }
+
+  renderDashboard();
+}
+
+function populateWeekOptions() {
+  const select = $("dashWeekSelect");
+  const currentVal = select.value;
+  select.innerHTML = "";
+  
+  // 生成当前学期 1-25 周的选项
+  for (let i = 1; i <= 25; i++) {
+    const opt = new Option(tFormat('dash_week_opt', { week: i }), i);
+    select.add(opt);
+  }
+  
+  // 恢复选中值，或计算当前日期是第几周
+  if (currentVal) {
+    select.value = currentVal;
+  } else {
+    const d = new Date(selectedDate());
+    let week = 1;
+    if (d >= sem1Start && d <= sem1End) {
+      week = Math.ceil((Math.abs(d - sem1Start) / 86400000 + 1) / 7);
+    } else if (d >= sem2Start && d <= sem2End) {
+      week = Math.ceil((Math.abs(d - sem2Start) / 86400000 + 1) / 7);
+    }
+    select.value = week > 0 && week <= 25 ? week : 1;
+  }
+}
+
+async function renderDashboard() {
+  const kpiTotal = $("dash_total");
+  const kpiPresent = $("dash_present");
+  const kpiAbsent = $("dash_absent");
+  const kpiRate = $("dash_rate");
+  const kpiTotalLbl = $("dash_total_lbl");
   const barsDiv = $("dash_class_bars");
-  if (barsDiv) {
-    if (!data.length) {
-      barsDiv.innerHTML = "<p class='muted'>暂无数据</p>";
-    } else {
-      // 选出最大出席人数，用于计算相对宽度（这里直接用百分比，所以是100）
-      barsDiv.innerHTML = data.map(d => {
-        const cTotal = d.rL + d.rP;
-        const cPresent = d.rPL + d.rPP;
-        const cRateNum = cTotal > 0 ? (cPresent / cTotal) * 100 : 0;
-        
-        let barColor = 'var(--success)';
-        if (cRateNum < 90) barColor = 'var(--warning)';
-        if (cRateNum < 75) barColor = 'var(--danger)';
+  const loadingDiv = $("dashLoading");
+  
+  kpiTotalLbl.innerHTML = t('dash_total_lbl'); // reset label
 
+  if (currentDashTab === 'today') {
+    // 现有逻辑：基于当前选中日期的本地数据计算
+    const { data, grand, absentList } = computeLogData();
+    const total = grand.totalL + grand.totalP;
+    const present = grand.pL + grand.pP;
+    const absent = grand.aL + grand.aP;
+    const rate = total > 0 ? ((present / total) * 100).toFixed(2) + "%" : "-";
+    
+    kpiTotal.innerText = total;
+    kpiPresent.innerText = present;
+    kpiAbsent.innerText = absent;
+    kpiRate.innerText = rate;
+
+    barsDiv.innerHTML = data.map(d => {
+      const cTotal = d.rL + d.rP;
+      const cPresent = d.rPL + d.rPP;
+      const cRateNum = cTotal > 0 ? (cPresent / cTotal) * 100 : 0;
+      let barColor = cRateNum >= 90 ? 'var(--success)' : (cRateNum >= 75 ? 'var(--warning)' : 'var(--danger)');
+      return `
+        <div style="display:flex;align-items:center;gap:12px;font-size:13px">
+          <div style="width:50px;font-weight:600;color:var(--secondary)">${esc(d.cls)}</div>
+          <div class="bar-track" style="flex:1;background:#e2e8f0;border-radius:4px;height:16px;overflow:hidden;position:relative">
+            <div style="background:${barColor};height:100%;width:${cRateNum}%;transition:width 0.5s ease-out;border-radius:4px"></div>
+            <span style="position:absolute;right:8px;top:0;line-height:16px;font-size:11px;color:#fff;font-weight:600;text-shadow:0 0 2px rgba(0,0,0,0.5)">${cRateNum.toFixed(1)}%</span>
+          </div>
+          <div style="width:60px;text-align:right;color:var(--muted)">${cPresent}/${cTotal} ${t('students_count')}</div>
+        </div>
+      `;
+    }).join("");
+
+    $("dash_absent_list").innerHTML = absentList.length ? absentList.map(a => `
+      <div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #e2e8f0;font-size:13px">
+        <span style="font-weight:600;color:var(--secondary)">${esc(a.cls)}</span>
+        <span>${esc(a.name)}</span>
+        <span style="color:var(--danger);font-size:11px">#${a.no}</span>
+      </div>
+    `).join("") : `<div style="color:var(--success);text-align:center;padding:20px;">${t('dash_all_present')}</div>`;
+    
+  } else {
+    // 周报 / 月报 / 年报逻辑：需要从 Supabase 拉取历史数据
+    loadingDiv.classList.remove('hidden');
+    kpiTotal.innerText = "-";
+    kpiPresent.innerText = "-";
+    kpiAbsent.innerText = "-";
+    kpiRate.innerText = "-";
+    barsDiv.innerHTML = "";
+    
+    try {
+      let startDate, endDate;
+      if (currentDashTab === 'weekly') {
+        const selectedWeek = parseInt($("dashWeekSelect").value, 10);
+        let semesterStart = sem1Start;
+        const d = new Date(selectedDate());
+        if (d >= sem2Start) semesterStart = sem2Start;
+        
+        const firstMonday = getMonday(semesterStart);
+        startDate = new Date(firstMonday);
+        startDate.setDate(startDate.getDate() + (selectedWeek - 1) * 7);
+        endDate = new Date(startDate);
+        endDate.setDate(endDate.getDate() + 4); // 星期五
+      } else if (currentDashTab === 'monthly') {
+        const monthStr = $("dashMonthInput").value; // YYYY-MM
+        if (!monthStr) throw new Error("No month selected");
+        const [year, month] = monthStr.split('-');
+        startDate = new Date(year, month - 1, 1);
+        endDate = new Date(year, month, 0); // 该月最后一天
+      } else {
+        const year = $("dashYearInput").value;
+        if (!year) throw new Error("No year selected");
+        startDate = new Date(year, 0, 1);
+        endDate = new Date(year, 11, 31);
+      }
+      
+      const startStr = startDate.toISOString().slice(0, 10);
+      const endStr = endDate.toISOString().slice(0, 10);
+      
+      // 过滤掉周末
+      const isWeekend = (dateStr) => {
+        const day = new Date(dateStr).getDay();
+        return day === 0 || day === 6;
+      };
+
+      // 1. 获取该时段内的所有出席记录
+      const { data: allAtt, error: aErr } = await supabaseClient
+        .from("attendance_records")
+        .select("attendance_date, present, students(class_id)")
+        .gte("attendance_date", startStr)
+        .lte("attendance_date", endStr);
+        
+      if (aErr) throw aErr;
+      
+      const periodAtt = (allAtt || []).filter(r => !isWeekend(r.attendance_date)); // 只保留工作日
+      
+      if (!periodAtt.length) {
+        loadingDiv.classList.add('hidden');
+        barsDiv.innerHTML = `<p class="muted" style="text-align:center;padding:20px">${t('dash_no_data_period')}</p>`;
+        return;
+      }
+      
+      // 2. 聚合数据
+      const classStats = {};
+      const allDates = new Set();
+      
+      periodAtt.forEach(r => {
+        const cid = r.students?.class_id;
+        if (!cid) return;
+        allDates.add(r.attendance_date);
+        if (!classStats[cid]) classStats[cid] = { present: 0, absent: 0 };
+        if (r.present) classStats[cid].present++;
+        else classStats[cid].absent++;
+      });
+      
+      const totalDaysCount = allDates.size;
+      let grandPresent = 0, grandAbsent = 0;
+      const chartData = [];
+      
+      classes.forEach(c => {
+        const stat = classStats[c.id] || { present: 0, absent: 0 };
+        const cTotal = stat.present + stat.absent;
+        const cRateNum = cTotal > 0 ? (stat.present / cTotal) * 100 : -1;
+        
+        grandPresent += stat.present;
+        grandAbsent += stat.absent;
+        
+        if (cRateNum >= 0) {
+          chartData.push({
+            name: c.name,
+            rate: cRateNum,
+            present: stat.present,
+            total: cTotal
+          });
+        }
+      });
+      
+      const grandTotal = grandPresent + grandAbsent;
+      const grandRate = grandTotal > 0 ? (grandPresent / grandTotal) * 100 : 0;
+      
+      // 更新 KPI：周/月/年报显示为"工作日记录天数"
+      kpiTotalLbl.innerHTML = t('dash_total_days').replace('{days}', totalDaysCount);
+      kpiTotal.innerText = totalDaysCount; 
+      
+      kpiPresent.innerText = grandPresent;
+      kpiAbsent.innerText = grandAbsent;
+      kpiRate.innerText = grandRate.toFixed(2) + "%";
+      
+      // 更新图表
+      chartData.sort((a, b) => a.name.localeCompare(b.name));
+      barsDiv.innerHTML = chartData.map(d => {
+        let barColor = d.rate >= 90 ? 'var(--success)' : (d.rate >= 75 ? 'var(--warning)' : 'var(--danger)');
         return `
           <div style="display:flex;align-items:center;gap:12px;font-size:13px">
-            <div style="width:50px;font-weight:600;color:var(--secondary)">${esc(d.cls)}</div>
+            <div style="width:50px;font-weight:600;color:var(--secondary)">${esc(d.name)}</div>
             <div class="bar-track" style="flex:1;background:#e2e8f0;border-radius:4px;height:16px;overflow:hidden;position:relative">
-              <div style="background:${barColor};height:100%;width:${cRateNum}%;transition:width 0.5s ease-out;border-radius:4px"></div>
-              <span style="position:absolute;right:8px;top:0;line-height:16px;font-size:11px;color:#fff;font-weight:600;text-shadow:0 0 2px rgba(0,0,0,0.5)">${cRateNum.toFixed(1)}%</span>
+              <div style="background:${barColor};height:100%;width:${d.rate}%;transition:width 0.5s ease-out;border-radius:4px"></div>
+              <span style="position:absolute;right:8px;top:0;line-height:16px;font-size:11px;color:#fff;font-weight:600;text-shadow:0 0 2px rgba(0,0,0,0.5)">${d.rate.toFixed(1)}%</span>
             </div>
-            <div style="width:60px;text-align:right;color:var(--muted)">${cPresent}/${cTotal} ${t('students_count')}</div>
+            <div style="width:60px;text-align:right;color:var(--muted)">${d.present}/${d.total}</div>
           </div>
         `;
       }).join("");
-    }
-  }
-
-  // 更新缺席名单监控
-  const absListDiv = $("dash_absent_list");
-  if (absListDiv) {
-    if (!absentList.length) {
-      absListDiv.innerHTML = `<div style="color:var(--success);text-align:center;padding:20px;">${t('dash_all_present')}</div>`;
-    } else {
-      absListDiv.innerHTML = absentList.map(a => `
-        <div style="display:flex;justify-content:space-between;padding:8px;border-bottom:1px solid #e2e8f0;font-size:13px">
-          <span style="font-weight:600;color:var(--secondary)">${esc(a.cls)}</span>
-          <span>${esc(a.name)}</span>
-          <span style="color:var(--danger);font-size:11px">#${a.no}</span>
-        </div>
-      `).join("");
+      
+    } catch (err) {
+      barsDiv.innerHTML = `<p class="muted" style="color:var(--danger);text-align:center;">Error: ${esc(err.message)}</p>`;
+    } finally {
+      loadingDiv.classList.add('hidden');
     }
   }
 }
